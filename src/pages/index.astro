@@ -1,8 +1,6 @@
 ---
-import Footer from '../components/ui/Footer.astro';
-import Header from '../components/ui/Header.astro';
 import BaseHead from '../components/ui/BaseHead.astro';
-import LegacyAppShell from '../components/react/LegacyAppShell.jsx';
+import MacClassicResponsive from '../components/react/MacClassicResponsive.jsx';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
@@ -10,32 +8,21 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 <html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			body {
+				margin: 0;
+				overflow: hidden;
+			}
+			main {
+				width: 100%;
+				max-width: 100%;
+				padding: 0;
+			}
+		</style>
 	</head>
 	<body>
-		<Header />
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				This site now uses <a href="https://astro.build/">Astro</a> as the blog foundation, with React
-				components available where interactivity is needed.
-			</p>
-			<p>
-				The current structure is organized for incremental migration so existing UI can be moved over without
-				changing styles all at once.
-			</p>
-			<p>Recommended next steps for this migration:</p>
-			<ul>
-				<li>Move presentational elements into <code>src/components/ui</code></li>
-				<li>Keep interactive widgets in <code>src/components/react</code></li>
-				<li>Write posts in <code>src/content/blog</code></li>
-				<li>Adjust blog list/detail templates in <code>src/pages/blog</code> and <code>src/layouts</code></li>
-			</ul>
-			<LegacyAppShell client:load />
-			<p>
-				When you are ready, we can replace this page with your actual React app shell and preserve your current
-				CSS class names.
-			</p>
+			<MacClassicResponsive client:load />
 		</main>
-		<Footer />
 	</body>
 </html>
