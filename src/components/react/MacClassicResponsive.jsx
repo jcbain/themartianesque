@@ -308,7 +308,7 @@ function BootScreen({ onDone }) {
                   fontSize: 13,
                 }}
               >
-                Welcome to James's Blog
+                Welcome to The Martianesque Blog
               </div>
               <div
                 style={{
@@ -1170,7 +1170,7 @@ function MobileFinderBar({
             fontWeight: "bold",
           }}
         >
-          James's Blog
+          The Martianesque
         </div>
 
         <Clock mobile />
@@ -1583,7 +1583,7 @@ function DesktopLayout({
   const desktopIcons = [
     {
       id: "hd",
-      label: "James's Blog",
+      label: "Weblog",
       iconEl: <HdIcon />,
       action: openArchive,
     },
