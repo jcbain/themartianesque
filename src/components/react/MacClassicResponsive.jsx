@@ -1,41 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-// ─── DATA ────────────────────────────────────────────────────────────────────
-
-const posts = [
-  {
-    id: 1,
-    title: "Welcome to My Blog",
-    date: "Sunday, April 13, 2026",
-    wordCount: 98,
-    content: `Welcome to my little corner of the internet.\n\nI built this blog to look like the Mac desktop I grew up with — System 7, circa 1992. There's something about that era of computing that felt intimate. The machine was yours. The interface had personality.\n\nModern software has traded all of that for scale. Everything is frictionless, optimised, A/B tested into blandness. I wanted something that felt handmade again.\n\nSo here we are. Posts open in little windows. You can drag them around. The menu bar sits at the top waiting for you.\n\n— James`,
-  },
-  {
-    id: 2,
-    title: "Building a Furby AI",
-    date: "Thursday, April 9, 2026",
-    wordCount: 112,
-    content: `The premise: take an original 1998 Furby and put a local LLM inside it.\n\nNot a Raspberry Pi playing canned phrases. An actual language model, running on a nearby machine, with the Furby acting as a voice terminal — wake word detection, speech-to-text, Ollama inference, and TTS piped back out through the original speaker with pitch and vibrato effects.\n\nThe audio chain is the hardest part. Furby's speaker was never meant to reproduce anything but its own pre-recorded clips. Getting natural speech to sound authentically Furby-ish without losing intelligibility is a surprisingly nuanced DSP problem.\n\nI'm targeting a used RTX 3090 build for local inference. More updates as I get further in.\n\n— James`,
-  },
-  {
-    id: 3,
-    title: "On Retro UI Design",
-    date: "Monday, April 5, 2026",
-    wordCount: 89,
-    content: `The Mac's original interface was designed by people who obsessed over every pixel. Susan Kare drew the icons by hand on graph paper. The system font was crafted at 9pt to be legible on a 72dpi screen.\n\nThat era of constraint produced some of the most considered UI design ever made. When you only have black and white pixels, you learn to use them well.\n\nThere's a lesson in that for modern design. Constraints aren't limitations — they're editors. The best interfaces aren't the ones with the most options. They're the ones that made the right decisions before you even arrived.\n\n— James`,
-  },
-  {
-    id: 4,
-    title: "PhD to DevOps: A Journey",
-    date: "Wednesday, March 30, 2026",
-    wordCount: 76,
-    content: `I have a PhD in anthropology. I work in DevOps. People find this combination surprising.\n\nIt shouldn't be. Anthropology is fundamentally about understanding systems — how people organise themselves, what rules they follow, what those rules mean. Software engineering is the same thing, one abstraction layer up.\n\nThe difference is that in anthropology you write field notes. In DevOps you write runbooks. The epistemology is identical.\n\nBoth fields reward people who are comfortable sitting with complexity without immediately trying to resolve it.\n\n— James`,
-  },
-];
-
 // ─── HOOKS ───────────────────────────────────────────────────────────────────
 
-function getPostIdFromPath(pathname) {
+function getPostIdFromPath(pathname, posts) {
   const match = pathname.match(/^\/post\/(\d+)\/?$/);
   if (!match) return null;
   const id = Number(match[1]);
@@ -44,7 +11,9 @@ function getPostIdFromPath(pathname) {
 }
 
 function useIsMobile() {
-  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobile, setMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768
+  );
   useEffect(() => {
     const handler = () => setMobile(window.innerWidth < 768);
     window.addEventListener("resize", handler);
@@ -85,28 +54,38 @@ function useWindowManager() {
   const [windows, setWindows] = useState([]);
   const [zTop, setZTop] = useState(10);
   const open = useCallback((win) => {
-    setZTop(z => {
+    setZTop((z) => {
       const next = z + 1;
-      setWindows(ws => {
-        const ex = ws.find(w => w.id === win.id);
-        if (ex) return ws.map(w => w.id === win.id ? { ...w, z: next } : w);
+      setWindows((ws) => {
+        const ex = ws.find((w) => w.id === win.id);
+        if (ex) return ws.map((w) => (w.id === win.id ? { ...w, z: next } : w));
         return [...ws, { ...win, z: next }];
       });
       return next;
     });
   }, []);
-  const close = useCallback((id) => setWindows(ws => ws.filter(w => w.id !== id)), []);
+  const close = useCallback(
+    (id) => setWindows((ws) => ws.filter((w) => w.id !== id)),
+    []
+  );
   const focus = useCallback((id) => {
-    setZTop(z => {
+    setZTop((z) => {
       const next = z + 1;
-      setWindows(ws => ws.map(w => w.id === id ? { ...w, z: next } : w));
+      setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, z: next } : w)));
       return next;
     });
   }, []);
-  const move = useCallback((id, x, y) => setWindows(ws => ws.map(w => w.id === id ? { ...w, x, y } : w)), []);
+  const move = useCallback(
+    (id, x, y) =>
+      setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w))),
+    []
+  );
   const resize = useCallback(
-    (id, w, h) => setWindows((ws) => ws.map((win) => (win.id === id ? { ...win, w, h } : win))),
-    [],
+    (id, w, h) =>
+      setWindows((ws) =>
+        ws.map((win) => (win.id === id ? { ...win, w, h } : win))
+      ),
+    []
   );
   return { windows, open, close, focus, move, resize };
 }
@@ -117,10 +96,44 @@ function HdIcon({ size = 32 }) {
   const s = size / 32;
   return (
     <svg width={size} height={size * 0.875} viewBox="0 0 32 28" fill="none">
-      <rect x="1" y="4" width="30" height="22" rx="2" fill="white" stroke="black" strokeWidth="1.5"/>
-      <rect x="4" y="7" width="16" height="12" rx="1" fill="#ddd" stroke="black" strokeWidth="1"/>
-      <circle cx="24" cy="13" r="3" fill="#bbb" stroke="black" strokeWidth="1"/>
-      <rect x="4" y="21" width="24" height="2" rx="1" fill="#ccc" stroke="black" strokeWidth="0.5"/>
+      <rect
+        x="1"
+        y="4"
+        width="30"
+        height="22"
+        rx="2"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="4"
+        y="7"
+        width="16"
+        height="12"
+        rx="1"
+        fill="#ddd"
+        stroke="black"
+        strokeWidth="1"
+      />
+      <circle
+        cx="24"
+        cy="13"
+        r="3"
+        fill="#bbb"
+        stroke="black"
+        strokeWidth="1"
+      />
+      <rect
+        x="4"
+        y="21"
+        width="24"
+        height="2"
+        rx="1"
+        fill="#ccc"
+        stroke="black"
+        strokeWidth="0.5"
+      />
     </svg>
   );
 }
@@ -128,8 +141,18 @@ function HdIcon({ size = 32 }) {
 function FolderIcon({ size = 32 }) {
   return (
     <svg width={size} height={size * 0.875} viewBox="0 0 32 28" fill="none">
-      <path d="M2 8 L2 24 L30 24 L30 8 Z" fill="white" stroke="black" strokeWidth="1.5"/>
-      <path d="M2 8 L8 4 L16 4 L16 8 Z" fill="white" stroke="black" strokeWidth="1.5"/>
+      <path
+        d="M2 8 L2 24 L30 24 L30 8 Z"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M2 8 L8 4 L16 4 L16 8 Z"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }
@@ -137,12 +160,26 @@ function FolderIcon({ size = 32 }) {
 function NoteIcon({ size = 32 }) {
   return (
     <svg width={size * 0.875} height={size} viewBox="0 0 28 32" fill="none">
-      <rect x="2" y="1" width="24" height="30" rx="1" fill="white" stroke="black" strokeWidth="1.5"/>
-      <path d="M18 1 L18 8 L25 8" fill="white" stroke="black" strokeWidth="1.5"/>
-      <path d="M18 1 L25 8" stroke="black" strokeWidth="1.5"/>
-      <line x1="6" y1="13" x2="22" y2="13" stroke="black" strokeWidth="1"/>
-      <line x1="6" y1="17" x2="22" y2="17" stroke="black" strokeWidth="1"/>
-      <line x1="6" y1="21" x2="16" y2="21" stroke="black" strokeWidth="1"/>
+      <rect
+        x="2"
+        y="1"
+        width="24"
+        height="30"
+        rx="1"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M18 1 L18 8 L25 8"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
+      <path d="M18 1 L25 8" stroke="black" strokeWidth="1.5" />
+      <line x1="6" y1="13" x2="22" y2="13" stroke="black" strokeWidth="1" />
+      <line x1="6" y1="17" x2="22" y2="17" stroke="black" strokeWidth="1" />
+      <line x1="6" y1="21" x2="16" y2="21" stroke="black" strokeWidth="1" />
     </svg>
   );
 }
@@ -150,11 +187,20 @@ function NoteIcon({ size = 32 }) {
 function TrashIcon({ size = 32 }) {
   return (
     <svg width={size * 0.875} height={size} viewBox="0 0 28 32" fill="none">
-      <rect x="4" y="8" width="20" height="22" rx="1" fill="white" stroke="black" strokeWidth="1.5"/>
-      <line x1="4" y1="12" x2="24" y2="12" stroke="black" strokeWidth="1"/>
-      <line x1="10" y1="8" x2="10" y2="4" stroke="black" strokeWidth="1.5"/>
-      <line x1="18" y1="8" x2="18" y2="4" stroke="black" strokeWidth="1.5"/>
-      <line x1="10" y1="4" x2="18" y2="4" stroke="black" strokeWidth="1.5"/>
+      <rect
+        x="4"
+        y="8"
+        width="20"
+        height="22"
+        rx="1"
+        fill="white"
+        stroke="black"
+        strokeWidth="1.5"
+      />
+      <line x1="4" y1="12" x2="24" y2="12" stroke="black" strokeWidth="1" />
+      <line x1="10" y1="8" x2="10" y2="4" stroke="black" strokeWidth="1.5" />
+      <line x1="18" y1="8" x2="18" y2="4" stroke="black" strokeWidth="1.5" />
+      <line x1="10" y1="4" x2="18" y2="4" stroke="black" strokeWidth="1.5" />
     </svg>
   );
 }
@@ -163,12 +209,26 @@ function PostFileIcon({ size = 26, invert = false }) {
   const stroke = invert ? "white" : "black";
   return (
     <svg width={size * 0.867} height={size} viewBox="0 0 26 30" fill="none">
-      <rect x="2" y="1" width="22" height="28" rx="1" fill={invert ? "black" : "white"} stroke={stroke} strokeWidth="1.5"/>
-      <path d="M16 1 L16 7 L22 7" fill="none" stroke={stroke} strokeWidth="1.5"/>
-      <line x1="5" y1="11" x2="21" y2="11" stroke={stroke} strokeWidth="1"/>
-      <line x1="5" y1="15" x2="21" y2="15" stroke={stroke} strokeWidth="1"/>
-      <line x1="5" y1="19" x2="21" y2="19" stroke={stroke} strokeWidth="1"/>
-      <line x1="5" y1="23" x2="14" y2="23" stroke={stroke} strokeWidth="1"/>
+      <rect
+        x="2"
+        y="1"
+        width="22"
+        height="28"
+        rx="1"
+        fill={invert ? "black" : "white"}
+        stroke={stroke}
+        strokeWidth="1.5"
+      />
+      <path
+        d="M16 1 L16 7 L22 7"
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+      />
+      <line x1="5" y1="11" x2="21" y2="11" stroke={stroke} strokeWidth="1" />
+      <line x1="5" y1="15" x2="21" y2="15" stroke={stroke} strokeWidth="1" />
+      <line x1="5" y1="19" x2="21" y2="19" stroke={stroke} strokeWidth="1" />
+      <line x1="5" y1="23" x2="14" y2="23" stroke={stroke} strokeWidth="1" />
     </svg>
   );
 }
@@ -176,12 +236,27 @@ function PostFileIcon({ size = 26, invert = false }) {
 function HappyMacIcon({ size = 66 }) {
   return (
     <svg width={size} height={size * 1.09} viewBox="0 0 66 72" fill="none">
-      <rect x="3" y="3" width="60" height="66" rx="8" fill="white" stroke="black" strokeWidth="3"/>
-      <rect x="10" y="10" width="46" height="34" rx="2" fill="black"/>
-      <rect x="12" y="12" width="42" height="30" rx="1" fill="white"/>
-      <rect x="18" y="20" width="6" height="8" rx="1" fill="black"/>
-      <rect x="42" y="20" width="6" height="8" rx="1" fill="black"/>
-      <path d="M20 34 Q33 42 46 34" stroke="black" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      <rect
+        x="3"
+        y="3"
+        width="60"
+        height="66"
+        rx="8"
+        fill="white"
+        stroke="black"
+        strokeWidth="3"
+      />
+      <rect x="10" y="10" width="46" height="34" rx="2" fill="black" />
+      <rect x="12" y="12" width="42" height="30" rx="1" fill="white" />
+      <rect x="18" y="20" width="6" height="8" rx="1" fill="black" />
+      <rect x="42" y="20" width="6" height="8" rx="1" fill="black" />
+      <path
+        d="M20 34 Q33 42 46 34"
+        stroke="black"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -201,27 +276,57 @@ function BootScreen({ onDone }) {
   }, []);
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 999999,
-      background: phase === 0 ? "#000" : "#fff",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", gap: 24,
-      transition: "background 0.3s",
-    }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 999999,
+        background: phase === 0 ? "#000" : "#fff",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 24,
+        transition: "background 0.3s",
+      }}
+    >
       {phase >= 1 && (
         <>
           <HappyMacIcon size={72} />
           {phase >= 2 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ fontFamily: "Chicago, Geneva, sans-serif", fontSize: 13 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "Chicago, Geneva, sans-serif",
+                  fontSize: 13,
+                }}
+              >
                 Welcome to James's Blog
               </div>
-              <div style={{ width: 200, height: 14, border: "1px solid black", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{
-                  height: "100%", background: "black",
-                  width: `${progress}%`,
-                  transition: "width 1.6s ease-in-out",
-                }} />
+              <div
+                style={{
+                  width: 200,
+                  height: 14,
+                  border: "1px solid black",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    background: "black",
+                    width: `${progress}%`,
+                    transition: "width 1.6s ease-in-out",
+                  }}
+                />
               </div>
             </div>
           )}
@@ -238,10 +343,12 @@ function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
     <div
       onMouseDown={draggable ? onMouseDown : undefined}
       style={{
-        height: 22, flexShrink: 0,
+        height: 22,
+        flexShrink: 0,
         background: "white",
         borderBottom: "1px solid black",
-        display: "flex", alignItems: "center",
+        display: "flex",
+        alignItems: "center",
         cursor: draggable ? "default" : "default",
         position: "relative",
         backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent 1px, #aaa 1px, #aaa 2px)`,
@@ -252,20 +359,36 @@ function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
       <div
         onClick={onClose}
         style={{
-          width: 13, height: 13, border: "1.5px solid black",
-          background: "white", marginLeft: 6, flexShrink: 0,
-          cursor: "default", zIndex: 1,
+          width: 13,
+          height: 13,
+          border: "1.5px solid black",
+          background: "white",
+          marginLeft: 6,
+          flexShrink: 0,
+          cursor: "default",
+          zIndex: 1,
         }}
       />
-      <div style={{
-        position: "absolute", left: 0, right: 0,
-        display: "flex", justifyContent: "center", pointerEvents: "none",
-      }}>
-        <span style={{
-          background: "white", padding: "0 8px",
-          fontFamily: "Chicago, 'Charcoal', Geneva, sans-serif",
-          fontSize: 12, fontWeight: "bold", lineHeight: "22px",
-        }}>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            background: "white",
+            padding: "0 8px",
+            fontFamily: "Chicago, 'Charcoal', Geneva, sans-serif",
+            fontSize: 12,
+            fontWeight: "bold",
+            lineHeight: "22px",
+          }}
+        >
           {title}
         </span>
       </div>
@@ -277,7 +400,14 @@ function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
 
 const MENUBAR_H = 20;
 
-function DraggableWindow({ win, onClose, onFocus, onMove, onResize, children }) {
+function DraggableWindow({
+  win,
+  onClose,
+  onFocus,
+  onMove,
+  onResize,
+  children,
+}) {
   const dragging = useRef(false);
   const resizing = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -337,18 +467,32 @@ function DraggableWindow({ win, onClose, onFocus, onMove, onResize, children }) 
       onMouseDown={onFocus}
       style={{
         position: "fixed",
-        left: win.x, top: win.y,
-        width: win.w, height: win.h,
+        left: win.x,
+        top: win.y,
+        width: win.w,
+        height: win.h,
         zIndex: win.z,
         background: "white",
         border: "1.5px solid black",
         boxShadow: "2px 2px 0 black",
-        display: "flex", flexDirection: "column",
+        display: "flex",
+        flexDirection: "column",
         overflow: "hidden",
       }}
     >
-      <MacTitleBar title={win.title} onClose={onClose} onMouseDown={handleMouseDown} />
-      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+      <MacTitleBar
+        title={win.title}
+        onClose={onClose}
+        onMouseDown={handleMouseDown}
+      />
+      <div
+        style={{
+          flex: 1,
+          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {children}
       </div>
       <div
@@ -411,7 +555,9 @@ function SheetWindow({ title, onClose, children, visible }) {
       <div
         onClick={onClose}
         style={{
-          position: "fixed", inset: 0, zIndex: 1000,
+          position: "fixed",
+          inset: 0,
+          zIndex: 1000,
           background: "rgba(0,0,0,0.4)",
           opacity: visible ? 1 : 0,
           transition: "opacity 0.25s",
@@ -422,16 +568,25 @@ function SheetWindow({ title, onClose, children, visible }) {
       <div
         ref={sheetRef}
         style={{
-          position: "fixed", left: 0, right: 0, bottom: 0,
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
           height: "88vh",
           zIndex: 1001,
           background: "white",
           border: "1.5px solid black",
           borderBottom: "none",
           boxShadow: "-2px -2px 0 black",
-          display: "flex", flexDirection: "column",
-          transform: `translateY(${closing ? "100%" : visible ? `${translateY}px` : "100%"})`,
-          transition: translateY > 0 ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+          display: "flex",
+          flexDirection: "column",
+          transform: `translateY(${
+            closing ? "100%" : visible ? `${translateY}px` : "100%"
+          })`,
+          transition:
+            translateY > 0
+              ? "none"
+              : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           willChange: "transform",
           overflow: "hidden",
         }}
@@ -442,8 +597,11 @@ function SheetWindow({ title, onClose, children, visible }) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           style={{
-            height: 28, flexShrink: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
+            height: 28,
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             cursor: "grab",
             borderBottom: "1px solid #ddd",
             background: "white",
@@ -451,44 +609,73 @@ function SheetWindow({ title, onClose, children, visible }) {
             backgroundSize: "100% 2px",
           }}
         >
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: "#999" }} />
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: "#999",
+            }}
+          />
         </div>
 
         {/* Title bar */}
-        <div style={{
-          height: 44, flexShrink: 0,
-          borderBottom: "1.5px solid black",
-          display: "flex", alignItems: "center",
-          position: "relative",
-          background: "white",
-        }}>
+        <div
+          style={{
+            height: 44,
+            flexShrink: 0,
+            borderBottom: "1.5px solid black",
+            display: "flex",
+            alignItems: "center",
+            position: "relative",
+            background: "white",
+          }}
+        >
           <div
             onClick={onClose}
             style={{
               marginLeft: 14,
-              width: 28, height: 28,
+              width: 28,
+              height: 28,
               border: "1.5px solid black",
               background: "white",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               fontSize: 14,
             }}
           >
             ×
           </div>
-          <div style={{
-            position: "absolute", left: 0, right: 0,
-            display: "flex", justifyContent: "center", pointerEvents: "none",
-          }}>
-            <span style={{
-              fontFamily: "Chicago, 'Charcoal', Geneva, sans-serif",
-              fontSize: 14, fontWeight: "bold",
-            }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              display: "flex",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "Chicago, 'Charcoal', Geneva, sans-serif",
+                fontSize: 14,
+                fontWeight: "bold",
+              }}
+            >
               {title}
             </span>
           </div>
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div
+          style={{
+            flex: 1,
+            overflow: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
           {children}
         </div>
       </div>
@@ -500,23 +687,65 @@ function SheetWindow({ title, onClose, children, visible }) {
 
 function PostContent({ post }) {
   return (
-    <div style={{ padding: "20px 22px", fontFamily: "Georgia, 'Times New Roman', serif" }}>
-      <div style={{ borderBottom: "1px solid black", paddingBottom: 10, marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: "bold", fontFamily: "Chicago, Geneva, sans-serif", lineHeight: 1.3 }}>
+    <div
+      style={{
+        padding: "20px 22px",
+        fontFamily: "Georgia, 'Times New Roman', serif",
+      }}
+    >
+      <div
+        style={{
+          borderBottom: "1px solid black",
+          paddingBottom: 10,
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: "bold",
+            fontFamily: "Chicago, Geneva, sans-serif",
+            lineHeight: 1.3,
+          }}
+        >
           {post.title}
         </div>
-        <div style={{ fontSize: 12, color: "#666", marginTop: 5, fontFamily: "Geneva, sans-serif" }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: "#666",
+            marginTop: 5,
+            fontFamily: "Geneva, sans-serif",
+          }}
+        >
           {post.date}
         </div>
       </div>
       {post.content.split("\n\n").map((p, i) => (
-        <p key={i} style={{ margin: "0 0 16px", fontSize: 15, lineHeight: 1.75, color: "#111" }}>{p}</p>
+        <p
+          key={i}
+          style={{
+            margin: "0 0 16px",
+            fontSize: 15,
+            lineHeight: 1.75,
+            color: "#111",
+          }}
+        >
+          {p}
+        </p>
       ))}
-      <div style={{
-        marginTop: 24, paddingTop: 10, borderTop: "1px solid #ddd",
-        fontSize: 11, color: "#aaa", fontFamily: "Geneva, sans-serif",
-        display: "flex", justifyContent: "space-between",
-      }}>
+      <div
+        style={{
+          marginTop: 24,
+          paddingTop: 10,
+          borderTop: "1px solid #ddd",
+          fontSize: 11,
+          color: "#aaa",
+          fontFamily: "Geneva, sans-serif",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <span>{post.wordCount} words</span>
         <span>TextEdit v1.0</span>
       </div>
@@ -524,24 +753,48 @@ function PostContent({ post }) {
   );
 }
 
-function ArchiveContent({ onOpenPost }) {
+function ArchiveContent({ onOpenPost, posts }) {
   const [selected, setSelected] = useState(null);
   return (
     <div>
-      <div style={{
-        display: "flex", borderBottom: "1px solid black",
-        fontFamily: "Geneva, sans-serif", fontSize: 11,
-        background: "#f5f5f5",
-      }}>
-        <div style={{ flex: 1, padding: "5px 10px", borderRight: "1px solid #ccc" }}>Name</div>
-        <div style={{ width: 80, padding: "5px 8px", borderRight: "1px solid #ccc" }}>Words</div>
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "1px solid black",
+          fontFamily: "Geneva, sans-serif",
+          fontSize: 11,
+          background: "#f5f5f5",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            padding: "5px 10px",
+            borderRight: "1px solid #ccc",
+          }}
+        >
+          Name
+        </div>
+        <div
+          style={{
+            width: 80,
+            padding: "5px 8px",
+            borderRight: "1px solid #ccc",
+          }}
+        >
+          Words
+        </div>
       </div>
-      {posts.map(post => (
+      {posts.map((post) => (
         <div
           key={post.id}
-          onClick={() => { setSelected(post.id); onOpenPost(post); }}
+          onClick={() => {
+            setSelected(post.id);
+            onOpenPost(post);
+          }}
           style={{
-            display: "flex", alignItems: "center",
+            display: "flex",
+            alignItems: "center",
             background: selected === post.id ? "black" : "white",
             color: selected === post.id ? "white" : "black",
             borderBottom: "1px solid #eee",
@@ -550,19 +803,46 @@ function ArchiveContent({ onOpenPost }) {
             WebkitTapHighlightColor: "transparent",
           }}
         >
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}
+          >
             <PostFileIcon size={22} invert={selected === post.id} />
             <div>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 13 }}>{post.title}</div>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 11, color: selected === post.id ? "#ccc" : "#888", marginTop: 2 }}>{post.date}</div>
+              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 13 }}>
+                {post.title}
+              </div>
+              <div
+                style={{
+                  fontFamily: "Geneva, sans-serif",
+                  fontSize: 11,
+                  color: selected === post.id ? "#ccc" : "#888",
+                  marginTop: 2,
+                }}
+              >
+                {post.date}
+              </div>
             </div>
           </div>
-          <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 12, color: selected === post.id ? "#ccc" : "#666" }}>
+          <div
+            style={{
+              fontFamily: "Geneva, sans-serif",
+              fontSize: 12,
+              color: selected === post.id ? "#ccc" : "#666",
+            }}
+          >
             {post.wordCount}
           </div>
         </div>
       ))}
-      <div style={{ padding: "8px 10px", fontFamily: "Geneva, sans-serif", fontSize: 11, color: "#999", borderTop: "1px solid #eee" }}>
+      <div
+        style={{
+          padding: "8px 10px",
+          fontFamily: "Geneva, sans-serif",
+          fontSize: 11,
+          color: "#999",
+          borderTop: "1px solid #eee",
+        }}
+      >
         {posts.length} items
       </div>
     </div>
@@ -571,15 +851,94 @@ function ArchiveContent({ onOpenPost }) {
 
 function AboutContent() {
   return (
-    <div style={{
-      padding: 28, display: "flex", flexDirection: "column",
-      alignItems: "center", gap: 14, fontFamily: "Geneva, sans-serif",
-    }}>
-      <div style={{ fontSize: 56, lineHeight: 1 }}>🧑‍💻</div>
-      <div style={{ fontSize: 16, fontFamily: "Chicago, Geneva, sans-serif", fontWeight: "bold" }}>James</div>
+    <div
+      style={{
+        padding: 28,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 14,
+        fontFamily: "Geneva, sans-serif",
+      }}
+    >
+      <pre
+        style={{
+          margin: 0,
+          fontFamily: 'Monaco, "Courier New", monospace',
+          fontSize: 5.2,
+          lineHeight: 0.9,
+          letterSpacing: 0,
+          whiteSpace: "pre",
+          color: "#111",
+        }}
+      >
+        {String.raw`%&%%%%#########%%#%%&%%#%%%%###****%%%%%#*########
+%&%%%%########%%%%%%%%%%%&&&&&&%%##%%%&%****######
+%&%%%%%########%%%%%#%%%%%%%%%%%%%%%%&&%#***######
+%&%%%%%%%%##*#%&%#+-:--=*#&&%%#####%%&&%#**#######
+&&&%%%%%%%%%%%&+:.........-*%%%#****%&&%##########
+&&%%%%%%%%%%%&*:::::::::::::+&&%##**#&&%##########
+&&%%%%%%%%&%&&=::--:::-=+==-:#&%%#%#%&&%##%%%#####
+%%###%%%%&&&@&==+###*-:=*#*=--%&&&%%%&&%####%#%%%#
+****#%%%%&@@@@#*###%#-.:=+=-:.=%&&@&%%&%####%####*
+*##*#**##&@@@@%++**+=-:..:--:::+%&&&%%*#######*+==
+#%%%##%%%&@@@@%-:::-==+=--:-=--=-*&&%%*++=+%#***++
+%%%%%%%&&@@@@@@*-=++=+#*=-------:-@@@&%==++*%%%%##
+%%%%%%%&@@@&&@@&**+*+++++=-:--=:::#@&&&++==*&@&&#%
+%%%%%%%%&&@@@@@@&++++++*+=---==:-:*%%**#%%#&@@&&&&
+&&&&&&&&&&@@@@@@@&#*******+=++---=%=:...:%@@@@&&&&
+&&&&&&&&&&@@@@@@@@@&%%%%%#%%*=-----  ..:=#&&@@&&&%
+@@@@@@@@@@&&&@%#@@@&%%%%&&%+-----:  .......:-=+#%&
+&&#++++**##%%&&&@&&&####%%=--====-. .   ..      =&
+#=-:---+##*%%###%%*&#*##%+----==++-.....      .:+&
+:-=-==-+**##*+**#++%&##%*------+*--:::=**++*##%&&&
+-=+=+*-++*#*++**+#%#%%#%*======++----==+#&&@@@@&&&
+==++++=+***+++*#*&&%%%##****+====-======--=+*%&&&&
+=++*+==+++++++*+=++*+###****++===-+=-=====----=*&@
+=++#*=+*+++++++====++=*#%+++++==-=*+===++====--:=&
+++*#*=*#*++*=-==+=-==-+%&*++++====+====+======-::*
+***%+*%*+++=-==++----=*#&#=====+++#+===+++=====-:+
+*#%**%#****-==+==--==*#&@*==+=+=---++=***++++==--*
++*%*%%***%=--------=+#&&&#=+++==--:-==***++===--:#`}
+      </pre>
+      <div
+        style={{
+          fontSize: 16,
+          fontFamily: "Chicago, Geneva, sans-serif",
+          fontWeight: "bold",
+        }}
+      >
+        James Bain, PhD
+      </div>
       <div style={{ width: "100%", height: 1, background: "black" }} />
-      <div style={{ fontSize: 14, lineHeight: 1.8, textAlign: "center", color: "#222", maxWidth: 260 }}>
-        Developer. Anthropologist. Building AI Furbies and writing about tech, life, and the spaces between.
+      <div
+        style={{
+          fontSize: 14,
+          lineHeight: 1.8,
+          textAlign: "center",
+          color: "#222",
+          maxWidth: 260,
+        }}
+      >
+        Anthropolgist. Software Engineer. Overripe Cheese Stick.
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          lineHeight: 1.8,
+          textAlign: "center",
+          color: "#222",
+          maxWidth: 260,
+        }}
+      >
+        Currently building cool stuff at{" "}
+        <a
+          href="https://www.tugboatqa.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          TugboatQA
+        </a>
       </div>
       <div style={{ fontSize: 12, color: "#888" }}>Version 1.0 · © 2026</div>
     </div>
@@ -597,21 +956,32 @@ function DesktopIcon({ iconEl, label, onDoubleClick }) {
       onDoubleClick={onDoubleClick}
       onBlur={() => setSel(false)}
       style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        width: 72, padding: "6px 4px", cursor: "default", gap: 4,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        width: 72,
+        padding: "6px 4px",
+        cursor: "default",
+        gap: 4,
         userSelect: "none",
       }}
     >
-      <div style={{ filter: sel ? "invert(1)" : "none", display: "inline-flex" }}>
+      <div
+        style={{ filter: sel ? "invert(1)" : "none", display: "inline-flex" }}
+      >
         {iconEl}
       </div>
-      <div style={{
-        fontSize: 11, fontFamily: "Geneva, sans-serif",
-        textAlign: "center", lineHeight: 1.3,
-        background: sel ? "black" : "transparent",
-        color: sel ? "white" : "black",
-        padding: "1px 4px",
-      }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontFamily: "Geneva, sans-serif",
+          textAlign: "center",
+          lineHeight: 1.3,
+          background: sel ? "black" : "transparent",
+          color: sel ? "white" : "black",
+          padding: "1px 4px",
+        }}
+      >
         {label}
       </div>
     </div>
@@ -625,31 +995,48 @@ function MobileIcon({ iconEl, label, onTap }) {
   return (
     <div
       onTouchStart={() => setPressed(true)}
-      onTouchEnd={() => { setPressed(false); onTap(); }}
+      onTouchEnd={() => {
+        setPressed(false);
+        onTap();
+      }}
       onClick={onTap}
       style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        gap: 6, padding: 8, cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+        padding: 8,
+        cursor: "pointer",
         WebkitTapHighlightColor: "transparent",
         transform: pressed ? "scale(0.92)" : "scale(1)",
         transition: "transform 0.1s",
         userSelect: "none",
       }}
     >
-      <div style={{
-        width: 56, height: 56,
-        background: pressed ? "#eee" : "white",
-        border: "1.5px solid black",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: pressed ? "none" : "2px 2px 0 black",
-        transition: "all 0.1s",
-      }}>
+      <div
+        style={{
+          width: 56,
+          height: 56,
+          background: pressed ? "#eee" : "white",
+          border: "1.5px solid black",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: pressed ? "none" : "2px 2px 0 black",
+          transition: "all 0.1s",
+        }}
+      >
         {iconEl}
       </div>
-      <div style={{
-        fontSize: 11, fontFamily: "Geneva, sans-serif",
-        textAlign: "center", lineHeight: 1.3, color: "black",
-      }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontFamily: "Geneva, sans-serif",
+          textAlign: "center",
+          lineHeight: 1.3,
+          color: "black",
+        }}
+      >
         {label}
       </div>
     </div>
@@ -658,7 +1045,12 @@ function MobileIcon({ iconEl, label, onTap }) {
 
 // ─── MOBILE MENUBAR (bottom) ─────────────────────────────────────────────────
 
-function MobileFinderBar({ onOpenArchive, onOpenAbout, darkMode, onToggleDarkMode }) {
+function MobileFinderBar({
+  onOpenArchive,
+  onOpenAbout,
+  darkMode,
+  onToggleDarkMode,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <>
@@ -666,26 +1058,39 @@ function MobileFinderBar({ onOpenArchive, onOpenAbout, darkMode, onToggleDarkMod
         <div
           onClick={() => setMenuOpen(false)}
           style={{
-            position: "fixed", inset: 0, zIndex: 900,
+            position: "fixed",
+            inset: 0,
+            zIndex: 900,
           }}
         />
       )}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
-        height: 56,
-        background: "white",
-        borderTop: "1.5px solid black",
-        display: "flex", alignItems: "center",
-        zIndex: 950, paddingBottom: "env(safe-area-inset-bottom)",
-      }}>
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 56,
+          background: "white",
+          borderTop: "1.5px solid black",
+          display: "flex",
+          alignItems: "center",
+          zIndex: 950,
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
         {/* Apple / menu button */}
         <div
-          onClick={() => setMenuOpen(m => !m)}
+          onClick={() => setMenuOpen((m) => !m)}
           style={{
-            width: 56, height: "100%",
+            width: 56,
+            height: "100%",
             borderRight: "1px solid #ddd",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 20,
+            cursor: "pointer",
             fontFamily: "Chicago, Geneva, sans-serif",
             WebkitTapHighlightColor: "transparent",
           }}
@@ -694,40 +1099,77 @@ function MobileFinderBar({ onOpenArchive, onOpenAbout, darkMode, onToggleDarkMod
         </div>
 
         {menuOpen && (
-          <div style={{
-            position: "absolute", bottom: 56, left: 0,
-            background: "white", border: "1.5px solid black",
-            boxShadow: "2px -2px 0 black",
-            minWidth: 200, zIndex: 960,
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              bottom: 56,
+              left: 0,
+              background: "white",
+              border: "1.5px solid black",
+              boxShadow: "2px -2px 0 black",
+              minWidth: 200,
+              zIndex: 960,
+            }}
+          >
             {[
-              { label: "Post Archive", action: () => { onOpenArchive(); setMenuOpen(false); } },
-              { label: "About Me", action: () => { onOpenAbout(); setMenuOpen(false); } },
-              { label: darkMode ? "Disable Dark Mode" : "Enable Dark Mode", action: () => { onToggleDarkMode(); setMenuOpen(false); } },
+              {
+                label: "Post Archive",
+                action: () => {
+                  onOpenArchive();
+                  setMenuOpen(false);
+                },
+              },
+              {
+                label: "About Me",
+                action: () => {
+                  onOpenAbout();
+                  setMenuOpen(false);
+                },
+              },
+              {
+                label: darkMode ? "Disable Dark Mode" : "Enable Dark Mode",
+                action: () => {
+                  onToggleDarkMode();
+                  setMenuOpen(false);
+                },
+              },
               "---",
               { label: "Restart", action: () => window.location.reload() },
             ].map((item, i) =>
-              item === "---"
-                ? <div key={i} style={{ height: 1, background: "#aaa", margin: "3px 0" }} />
-                : (
-                  <div key={i} onClick={item.action} style={{
-                    padding: "12px 20px", fontSize: 14,
+              item === "---" ? (
+                <div
+                  key={i}
+                  style={{ height: 1, background: "#aaa", margin: "3px 0" }}
+                />
+              ) : (
+                <div
+                  key={i}
+                  onClick={item.action}
+                  style={{
+                    padding: "12px 20px",
+                    fontSize: 14,
                     fontFamily: "Geneva, sans-serif",
                     cursor: "pointer",
                     borderBottom: "1px solid #eee",
-                  }}>
-                    {item.label}
-                  </div>
-                )
+                  }}
+                >
+                  {item.label}
+                </div>
+              )
             )}
           </div>
         )}
 
-        <div style={{
-          flex: 1, display: "flex", justifyContent: "center",
-          fontFamily: "Chicago, Geneva, sans-serif", fontSize: 13,
-          fontWeight: "bold",
-        }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            fontFamily: "Chicago, Geneva, sans-serif",
+            fontSize: 13,
+            fontWeight: "bold",
+          }}
+        >
           James's Blog
         </div>
 
@@ -749,13 +1191,16 @@ function Clock({ mobile }) {
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{
-      padding: mobile ? "0 14px" : "0 12px",
-      display: "flex", alignItems: "center",
-      fontSize: mobile ? 13 : 12,
-      fontFamily: "Chicago, Geneva, sans-serif",
-      ...(mobile ? {} : { marginLeft: "auto" }),
-    }}>
+    <div
+      style={{
+        padding: mobile ? "0 14px" : "0 12px",
+        display: "flex",
+        alignItems: "center",
+        fontSize: mobile ? 13 : 12,
+        fontFamily: "Chicago, Geneva, sans-serif",
+        ...(mobile ? {} : { marginLeft: "auto" }),
+      }}
+    >
       {t}
     </div>
   );
@@ -765,25 +1210,46 @@ function Clock({ mobile }) {
 
 function DesktopMenuBar({ activeMenu, setActiveMenu, menus }) {
   return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, height: MENUBAR_H,
-      background: "white", borderBottom: "1px solid black",
-      display: "flex", alignItems: "stretch",
-      zIndex: 99999,
-      fontFamily: "Chicago, Geneva, sans-serif", fontSize: 12,
-    }}>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: MENUBAR_H,
+        background: "white",
+        borderBottom: "1px solid black",
+        display: "flex",
+        alignItems: "stretch",
+        zIndex: 99999,
+        fontFamily: "Chicago, Geneva, sans-serif",
+        fontSize: 12,
+      }}
+    >
       <div
-        style={{ padding: "0 10px", display: "flex", alignItems: "center", cursor: "default", borderRight: "1px solid #ddd", fontSize: 14 }}
+        style={{
+          padding: "0 10px",
+          display: "flex",
+          alignItems: "center",
+          cursor: "default",
+          borderRight: "1px solid #ddd",
+          fontSize: 14,
+        }}
         onClick={() => setActiveMenu(activeMenu === "apple" ? null : "apple")}
       >
         ⌘
       </div>
-      {menus.map(menu => (
+      {menus.map((menu) => (
         <div
           key={menu.label}
-          onClick={(e) => { e.stopPropagation(); setActiveMenu(activeMenu === menu.label ? null : menu.label); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveMenu(activeMenu === menu.label ? null : menu.label);
+          }}
           style={{
-            padding: "0 10px", display: "flex", alignItems: "center",
+            padding: "0 10px",
+            display: "flex",
+            alignItems: "center",
             cursor: "default",
             background: activeMenu === menu.label ? "black" : "transparent",
             color: activeMenu === menu.label ? "white" : "black",
@@ -792,26 +1258,47 @@ function DesktopMenuBar({ activeMenu, setActiveMenu, menus }) {
         >
           {menu.label}
           {activeMenu === menu.label && menu.items && (
-            <div style={{
-              position: "absolute", top: MENUBAR_H, left: 0,
-              background: "white", border: "1px solid black",
-              minWidth: 160, zIndex: 100000,
-              boxShadow: "2px 2px 0 black",
-            }}>
+            <div
+              style={{
+                position: "absolute",
+                top: MENUBAR_H,
+                left: 0,
+                background: "white",
+                border: "1px solid black",
+                minWidth: 160,
+                zIndex: 100000,
+                boxShadow: "2px 2px 0 black",
+              }}
+            >
               {menu.items.map((item, i) =>
-                item === "---"
-                  ? <div key={i} style={{ height: 1, background: "#888", margin: "2px 0" }} />
-                  : (
-                    <div
-                      key={i}
-                      onClick={item.action}
-                      style={{ padding: "4px 20px", cursor: "default", fontSize: 12, fontFamily: "Geneva, sans-serif", color: "black" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "black"; e.currentTarget.style.color = "white"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "black"; }}
-                    >
-                      {item.label}
-                    </div>
-                  )
+                item === "---" ? (
+                  <div
+                    key={i}
+                    style={{ height: 1, background: "#888", margin: "2px 0" }}
+                  />
+                ) : (
+                  <div
+                    key={i}
+                    onClick={item.action}
+                    style={{
+                      padding: "4px 20px",
+                      cursor: "default",
+                      fontSize: 12,
+                      fontFamily: "Geneva, sans-serif",
+                      color: "black",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "black";
+                      e.currentTarget.style.color = "white";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "white";
+                      e.currentTarget.style.color = "black";
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                )
               )}
             </div>
           )}
@@ -824,7 +1311,14 @@ function DesktopMenuBar({ activeMenu, setActiveMenu, menus }) {
 
 // ─── MOBILE LAYOUT ───────────────────────────────────────────────────────────
 
-function MobileLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRoute, onClearPostRoute }) {
+function MobileLayout({
+  darkMode,
+  onToggleDarkMode,
+  routedPostId,
+  onOpenPostRoute,
+  onClearPostRoute,
+  posts,
+}) {
   const [sheet, setSheet] = useState(null); // { type, post? }
   const [postSheet, setPostSheet] = useState(null);
 
@@ -846,50 +1340,103 @@ function MobileLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRout
   }, [routedPostId]);
 
   const mobileIcons = [
-    { id: "blog", label: "My Blog", iconEl: <HdIcon size={30} />, action: () => setSheet({ type: "archive" }) },
-    { id: "archive", label: "Archive", iconEl: <FolderIcon size={30} />, action: () => setSheet({ type: "archive" }) },
-    { id: "about", label: "About Me", iconEl: <NoteIcon size={30} />, action: () => setSheet({ type: "about" }) },
-    { id: "trash", label: "Trash", iconEl: <TrashIcon size={30} />, action: () => {} },
+    {
+      id: "blog",
+      label: "My Blog",
+      iconEl: <HdIcon size={30} />,
+      action: () => setSheet({ type: "archive" }),
+    },
+    {
+      id: "archive",
+      label: "Archive",
+      iconEl: <FolderIcon size={30} />,
+      action: () => setSheet({ type: "archive" }),
+    },
+    {
+      id: "about",
+      label: "About Me",
+      iconEl: <NoteIcon size={30} />,
+      action: () => setSheet({ type: "about" }),
+    },
+    {
+      id: "trash",
+      label: "Trash",
+      iconEl: <TrashIcon size={30} />,
+      action: () => {},
+    },
   ];
 
   return (
-    <div style={{ width: "100%", height: "100vh", overflow: "hidden", position: "relative" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
       {/* Desktop texture */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "#fff",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ebebeb'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ebebeb'/%3E%3C/svg%3E")`,
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#fff",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ebebeb'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ebebeb'/%3E%3C/svg%3E")`,
+        }}
+      />
 
       {/* Icon grid */}
-      <div style={{
-        position: "absolute",
-        top: 20, left: 0, right: 0,
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        padding: "0 8px",
-        gap: 8,
-      }}>
-        {mobileIcons.map(icon => (
-          <MobileIcon key={icon.id} iconEl={icon.iconEl} label={icon.label} onTap={icon.action} />
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 0,
+          right: 0,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          padding: "0 8px",
+          gap: 8,
+        }}
+      >
+        {mobileIcons.map((icon) => (
+          <MobileIcon
+            key={icon.id}
+            iconEl={icon.iconEl}
+            label={icon.label}
+            onTap={icon.action}
+          />
         ))}
       </div>
 
       {/* Recent posts label */}
-      <div style={{
-        position: "absolute", top: 130, left: 16, right: 16,
-        borderTop: "1px solid black",
-        paddingTop: 10,
-      }}>
-        <div style={{ fontFamily: "Chicago, Geneva, sans-serif", fontSize: 11, color: "#555", marginBottom: 4 }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 130,
+          left: 16,
+          right: 16,
+          borderTop: "1px solid black",
+          paddingTop: 10,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "Chicago, Geneva, sans-serif",
+            fontSize: 11,
+            color: "#555",
+            marginBottom: 4,
+          }}
+        >
           Recent Posts
         </div>
-        {posts.slice(0, 3).map(post => (
+        {posts.slice(0, 3).map((post) => (
           <div
             key={post.id}
             onClick={() => openPost(post)}
             style={{
-              display: "flex", alignItems: "center", gap: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
               padding: "10px 0",
               borderBottom: "1px solid #eee",
               cursor: "pointer",
@@ -898,8 +1445,25 @@ function MobileLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRout
           >
             <PostFileIcon size={20} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 13, fontWeight: "bold" }}>{post.title}</div>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 11, color: "#888", marginTop: 2 }}>{post.date}</div>
+              <div
+                style={{
+                  fontFamily: "Geneva, sans-serif",
+                  fontSize: 13,
+                  fontWeight: "bold",
+                }}
+              >
+                {post.title}
+              </div>
+              <div
+                style={{
+                  fontFamily: "Geneva, sans-serif",
+                  fontSize: 11,
+                  color: "#888",
+                  marginTop: 2,
+                }}
+              >
+                {post.date}
+              </div>
             </div>
             <div style={{ fontSize: 14, color: "#bbb" }}>›</div>
           </div>
@@ -912,7 +1476,7 @@ function MobileLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRout
         visible={sheet?.type === "archive"}
         onClose={() => setSheet(null)}
       >
-        <ArchiveContent onOpenPost={openPost} />
+        <ArchiveContent onOpenPost={openPost} posts={posts} />
       </SheetWindow>
 
       {/* About sheet */}
@@ -949,49 +1513,130 @@ function MobileLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRout
 
 // ─── DESKTOP LAYOUT ──────────────────────────────────────────────────────────
 
-function DesktopLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRoute, onClearPostRoute }) {
+function DesktopLayout({
+  darkMode,
+  onToggleDarkMode,
+  routedPostId,
+  onOpenPostRoute,
+  onClearPostRoute,
+  posts,
+}) {
   const { windows, open, close, focus, move, resize } = useWindowManager();
   const [activeMenu, setActiveMenu] = useState(null);
+  const getDesktopWindowFrame = useCallback(() => {
+    const fallback = { x: 100, y: 70, w: 640, h: 480 };
+    if (typeof window === "undefined") return fallback;
 
-  const openPost = useCallback((post) => {
+    const targetW = Math.floor(window.innerWidth * 0.8);
+    const targetH = Math.floor(window.innerHeight * 0.8);
+    const w = Math.max(280, Math.min(targetW, window.innerWidth));
+    const h = Math.max(180, Math.min(targetH, window.innerHeight - MENUBAR_H));
+    const x = Math.max(0, Math.floor((window.innerWidth - w) / 2));
+    const y = Math.max(MENUBAR_H, Math.floor((window.innerHeight - h) / 2));
+
+    return { x, y, w, h };
+  }, []);
+
+  const openPost = useCallback(
+    (post) => {
+      const frame = getDesktopWindowFrame();
+      open({
+        id: `post-${post.id}`,
+        type: "post",
+        post,
+        title: post.title,
+        ...frame,
+      });
+      onOpenPostRoute(post.id);
+    },
+    [open, onOpenPostRoute, getDesktopWindowFrame]
+  );
+
+  const openArchive = () => {
+    const frame = getDesktopWindowFrame();
     open({
-      id: `post-${post.id}`, type: "post", post,
-      title: post.title,
-      x: 60 + post.id * 22, y: 40 + post.id * 22,
-      w: 460, h: 380,
+      id: "archive",
+      type: "archive",
+      title: "Post Archive",
+      ...frame,
     });
-    onOpenPostRoute(post.id);
-  }, [open, onOpenPostRoute]);
-
-  const openArchive = () => open({ id: "archive", type: "archive", title: "Post Archive", x: 80, y: 50, w: 500, h: 300 });
-  const openAbout = () => open({ id: "about", type: "about", title: "About Me", x: 180, y: 90, w: 280, h: 300 });
-  const openTrash = () => open({ id: "trash", type: "trash", title: "Trash", x: 200, y: 110, w: 240, h: 180 });
+  };
+  const openAbout = () => {
+    const frame = getDesktopWindowFrame();
+    open({
+      id: "about",
+      type: "about",
+      title: "About Me",
+      ...frame,
+    });
+  };
+  const openTrash = () => {
+    const frame = getDesktopWindowFrame();
+    open({
+      id: "trash",
+      type: "trash",
+      title: "Trash",
+      ...frame,
+    });
+  };
 
   const desktopIcons = [
-    { id: "hd", label: "James's Blog", iconEl: <HdIcon />, action: openArchive },
-    { id: "folder", label: "Drafts", iconEl: <FolderIcon />, action: openArchive },
+    {
+      id: "hd",
+      label: "James's Blog",
+      iconEl: <HdIcon />,
+      action: openArchive,
+    },
+    {
+      id: "folder",
+      label: "Drafts",
+      iconEl: <FolderIcon />,
+      action: openArchive,
+    },
   ];
   const bottomIcons = [
     { id: "about", label: "About Me", iconEl: <NoteIcon />, action: openAbout },
-    { id: "archive", label: "Post Archive", iconEl: <FolderIcon />, action: openArchive },
+    {
+      id: "archive",
+      label: "Post Archive",
+      iconEl: <FolderIcon />,
+      action: openArchive,
+    },
     { id: "trash", label: "Trash", iconEl: <TrashIcon />, action: openTrash },
   ];
 
   const menus = [
-    { label: "File", items: [
-      { label: "Open Archive…", action: openArchive },
-      "---",
-      { label: "About Me…", action: openAbout },
-    ]},
-    { label: "Edit", items: [
-      { label: "Undo", action: () => {} }, "---",
-      { label: "Cut", action: () => {} }, { label: "Copy", action: () => {} }, { label: "Paste", action: () => {} }, "---",
-      { label: darkMode ? "Disable Dark Mode" : "Enable Dark Mode", action: onToggleDarkMode },
-    ]},
-    { label: "Special", items: [
-      { label: "Empty Trash…", action: () => {} }, "---",
-      { label: "Restart", action: () => window.location.reload() },
-    ]},
+    {
+      label: "File",
+      items: [
+        { label: "Open Archive…", action: openArchive },
+        "---",
+        { label: "About Me…", action: openAbout },
+      ],
+    },
+    {
+      label: "Edit",
+      items: [
+        { label: "Undo", action: () => {} },
+        "---",
+        { label: "Cut", action: () => {} },
+        { label: "Copy", action: () => {} },
+        { label: "Paste", action: () => {} },
+        "---",
+        {
+          label: darkMode ? "Disable Dark Mode" : "Enable Dark Mode",
+          action: onToggleDarkMode,
+        },
+      ],
+    },
+    {
+      label: "Special",
+      items: [
+        { label: "Empty Trash…", action: () => {} },
+        "---",
+        { label: "Restart", action: () => window.location.reload() },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -1004,51 +1649,106 @@ function DesktopLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRou
     if (!routedPostId) return;
     const matched = posts.find((post) => post.id === routedPostId);
     if (!matched) return;
+    const frame = getDesktopWindowFrame();
     open({
       id: `post-${matched.id}`,
       type: "post",
       post: matched,
       title: matched.title,
-      x: 60 + matched.id * 22,
-      y: 40 + matched.id * 22,
-      w: 460,
-      h: 380,
+      ...frame,
     });
-  }, [routedPostId, open]);
+  }, [routedPostId, open, posts, getDesktopWindowFrame]);
 
   return (
-    <div style={{ width: "100%", height: "100vh", overflow: "hidden", position: "relative" }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "#fff",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e8e8'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e8e8e8'/%3E%3C/svg%3E")`,
-      }} />
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "#fff",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e8e8'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e8e8e8'/%3E%3C/svg%3E")`,
+        }}
+      />
 
-      <div onClick={e => e.stopPropagation()}>
-        <DesktopMenuBar activeMenu={activeMenu} setActiveMenu={setActiveMenu} menus={menus} />
+      <div onClick={(e) => e.stopPropagation()}>
+        <DesktopMenuBar
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+          menus={menus}
+        />
       </div>
 
       {/* Disk icons - top right */}
-      <div style={{ position: "absolute", top: MENUBAR_H + 8, right: 8, display: "flex", flexDirection: "column", gap: 4, zIndex: 1 }}>
-        {desktopIcons.map(i => <DesktopIcon key={i.id} iconEl={i.iconEl} label={i.label} onDoubleClick={i.action} />)}
+      <div
+        style={{
+          position: "absolute",
+          top: MENUBAR_H + 8,
+          right: 8,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          zIndex: 1,
+        }}
+      >
+        {desktopIcons.map((i) => (
+          <DesktopIcon
+            key={i.id}
+            iconEl={i.iconEl}
+            label={i.label}
+            onDoubleClick={i.action}
+          />
+        ))}
       </div>
 
       {/* Desktop icons - bottom left */}
-      <div style={{ position: "absolute", bottom: 16, left: 8, display: "flex", flexDirection: "column", gap: 4, zIndex: 1 }}>
-        {bottomIcons.map(i => <DesktopIcon key={i.id} iconEl={i.iconEl} label={i.label} onDoubleClick={i.action} />)}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 16,
+          left: 8,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          zIndex: 1,
+        }}
+      >
+        {bottomIcons.map((i) => (
+          <DesktopIcon
+            key={i.id}
+            iconEl={i.iconEl}
+            label={i.label}
+            onDoubleClick={i.action}
+          />
+        ))}
       </div>
 
-      <div style={{
-        position: "absolute", top: MENUBAR_H + 16, left: "50%", transform: "translateX(-50%)",
-        fontFamily: "Geneva, sans-serif", fontSize: 11, color: "#bbb",
-        pointerEvents: "none", whiteSpace: "nowrap",
-      }}>
+      <div
+        style={{
+          position: "absolute",
+          top: MENUBAR_H + 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          fontFamily: "Geneva, sans-serif",
+          fontSize: 11,
+          color: "#bbb",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+        }}
+      >
         Double-click icons · Drag windows
       </div>
 
-      {windows.map(win => (
+      {windows.map((win) => (
         <DraggableWindow
-          key={win.id} win={win}
+          key={win.id}
+          win={win}
           onClose={() => {
             close(win.id);
             if (win.type === "post") onClearPostRoute();
@@ -1060,13 +1760,26 @@ function DesktopLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRou
           {win.type === "post" && <PostContent post={win.post} />}
           {win.type === "archive" && (
             <div style={{ height: "100%", overflow: "auto" }}>
-              <ArchiveContent onOpenPost={openPost} />
+              <ArchiveContent onOpenPost={openPost} posts={posts} />
             </div>
           )}
           {win.type === "about" && <AboutContent />}
           {win.type === "trash" && (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, fontFamily: "Geneva, sans-serif", fontSize: 12, color: "#999" }}>
-              <TrashIcon /><span>The Trash is empty.</span>
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+                gap: 8,
+                fontFamily: "Geneva, sans-serif",
+                fontSize: 12,
+                color: "#999",
+              }}
+            >
+              <TrashIcon />
+              <span>The Trash is empty.</span>
             </div>
           )}
         </DraggableWindow>
@@ -1077,13 +1790,13 @@ function DesktopLayout({ darkMode, onToggleDarkMode, routedPostId, onOpenPostRou
 
 // ─── ROOT ────────────────────────────────────────────────────────────────────
 
-export default function MacClassicResponsive() {
+export default function MacClassicResponsive({ posts = [] }) {
   const [booted, setBooted] = useState(false);
   const isMobile = useIsMobile();
   const [darkMode, setDarkMode] = useDarkModeSetting();
   const [routedPostId, setRoutedPostId] = useState(() => {
     if (typeof window === "undefined") return null;
-    return getPostIdFromPath(window.location.pathname);
+    return getPostIdFromPath(window.location.pathname, posts);
   });
   const appFilter = darkMode ? "invert(1) hue-rotate(180deg)" : "none";
 
@@ -1106,10 +1819,11 @@ export default function MacClassicResponsive() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const onPopState = () => setRoutedPostId(getPostIdFromPath(window.location.pathname));
+    const onPopState = () =>
+      setRoutedPostId(getPostIdFromPath(window.location.pathname, posts));
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [posts]);
 
   return (
     <>
@@ -1119,18 +1833,20 @@ export default function MacClassicResponsive() {
           {isMobile ? (
             <MobileLayout
               darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode(v => !v)}
+              onToggleDarkMode={() => setDarkMode((v) => !v)}
               routedPostId={routedPostId}
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
+              posts={posts}
             />
           ) : (
             <DesktopLayout
               darkMode={darkMode}
-              onToggleDarkMode={() => setDarkMode(v => !v)}
+              onToggleDarkMode={() => setDarkMode((v) => !v)}
               routedPostId={routedPostId}
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
+              posts={posts}
             />
           )}
         </div>

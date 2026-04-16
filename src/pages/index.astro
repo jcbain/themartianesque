@@ -1,7 +1,22 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/ui/BaseHead.astro';
 import MacClassicResponsive from '../components/react/MacClassicResponsive.jsx';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const postsCollection = (await getCollection('posts')).sort((a, b) => b.data.id - a.data.id);
+const posts = postsCollection.map((entry) => ({
+	id: entry.data.id,
+	title: entry.data.title,
+	date: entry.data.pubDate.toLocaleDateString('en-US', {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	}),
+	wordCount: entry.body.trim().split(" ").length,
+	content: entry.body.trim(),
+}));
 ---
 
 <!doctype html>
@@ -22,7 +37,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 	</head>
 	<body>
 		<main>
-			<MacClassicResponsive client:load />
+			<MacClassicResponsive posts={posts} client:load />
 		</main>
 	</body>
 </html>
