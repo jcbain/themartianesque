@@ -747,7 +747,7 @@ function PostContent({ post }) {
         }}
       >
         <span>{post.wordCount} words</span>
-        <span>TextEdit v1.0</span>
+        <span>TextEdit v3.5</span>
       </div>
     </div>
   );

@@ -1,9 +1,8 @@
 ---
-
-## id: 1
+id: 1
 title: "Welcome to the Martianesque"
-pubDate: "2026-04-16"
-
+pubDate: 2026-04-16
+---
 It's been a minute since I've written for myself. You may be saying, "but James, this is a blog and the whole world has access to it. It's a stretch to call it 'for yourself'." To that one reader out there holding on to this conviction I only have 2 things to say to you. 1. Thank you. I'm happy that you've found my little corner of the internet and flattered you'd think that there was more than just you reading this thing. My mother wouldn't even read this. And 2. Blogs are always personal to me. I use them as a distillation step in the process of my thinking. It's only fortuitous for you, dear individual reader, that I'm opening a window into my brain for you to bear witness. You're welcome and be careful.
 
 Now what was I on about before I got off track? Oh that's right. I'm back to writing a blog. It comes at the heels of diving into parenthood (my son is 10 weeks at the writing of this post) and my thoughts on the world haven't ever been more intentional (albeit a bit more hazy and probably full of spit up. Spit up is everywhere and I doubt even my thoughts are safe.) And quite frankly, I want to show him a world that is better than the world we currently find ourselves in (side eyeing you, America). So here we are, you and me and this blog and my thoughts.

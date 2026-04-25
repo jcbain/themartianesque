@@ -1,9 +1,8 @@
 ---
-
-## id: 1
-
+id: 2
 title: "Parenting the Feed"
-pubDate: "2026-04-24"
+pubDate: 2026-04-24
+---
 
 New parenthood is an annoying time in the algorithmic environment. Not as annoying as that one time Facebook allowed the proliferation of false information handing a presidential victory to a man with a moral compass more questionable than a plunger. But parenthood comes in at a distant second on the scale of "ways in which social media fucks with our brains."
 
@@ -11,9 +10,14 @@ New parenthood is an annoying time in the algorithmic environment. Not as annoyi
 
 By the time your baby is born, social media knows. Your 2:00am Facebook Marketplace scouring of the best, second-hand diaper pail has been feeding the algorithm about that soon-to-be bundle of joy that you suddenly feel underprepared and unequipped for. By the time that little fart gets here, Instagram is now feeding you a firehose of content of all the ways in which you are failing as a parent to a child who is 12 hours old.
 And here's the thing: new parents can't be blamed for shoveling out the big bucks to make sure little snookums gets the best to give them the greatest opportunity for development and future success. It's literally hardwired into our primeval brains. So yes, a wet wipe warmer seems like good parenting, particularly when we empathetically ask the question "would I want to wipe my butt with a cold wet wipe?" Pair that with the look of sheer terror on your newborn's face when this cold wipe first makes contact with their bum and it's no wonder you find even the most frugal of mums and pops forking out top dollar for a wet wipe sauna.
+
 The issue is that no baby needs a wet wipe sauna. Think about the thermal inertia of a wet wipe. By the time you pull it out of the warmer onto the butt du baby it's already cold again. And yet it's still actively being pushed on me 11 weeks into this child's life.
+
 Sure, that's a silly example that's rather innocuous but now imagine sifting through dozens or hundreds of these products that are just being forced upon a sleep-deprived person. All I came here for were dog videos and what I left with was a conscience full of guilt and a sinking feeling that I'm not doing enough, oh and a subscription promising me more sleep (sleep is another topic I've spent many a restless night thinking about. I'll talk about this in another post).
+
 There's also another issue that I believe has always existed in one form or another but has been amplified by social media. Everyone is an expert on child rearing and everyone else is telling you the wrong thing. This is the hellscape new parents find themselves in. One "expert" might say, try this burping technique to get your newborn to burp within 45 seconds every 9 out of 10 times. Another "expert" would say only do that burping technique if you want to kill your baby. In a world full of opinions and "expert" advice there exists very little gray area or nuance. It often feels like you are either doing the best thing possible for your little one or doing them irreparable harm. It is exhausting.
+
 Annoyingly, much of what circulates on the socials is anecdotal. People have so much to say about their personal experience. The problem is that not all babies are like your baby. I also imagine there is some sort of bastardization of survivorship bias going on. People don't post their hot tips when they have an overly fussy or colicky baby. Take my gremlin for example. He does not like to nap but if I hear one more influencer tell me to watch their sleepy cues and put them down before they are overtired I am going to flip. Put them down where? A bed of chloroform? My baby doesn't like to sleep! Yes, I see him wipe his eyes and yawn and his eyebrows are red but putting him down won't magically make him fall asleep. It feels like we inhabit a digital space where every content creator exists in the ideal. More realistically, they curate the ideal.
 You may be wondering why I don't just stay off social media altogether. That's a fair question and the short answer is I'm trying. But there also exists a helpful side for me which is proving to be very difficult to seek elsewhere. I like to watch makers. You know, woodworkers and people who turn Furbies into long-necked freaks; what God created the internet for. I personally get inspired in my own amateur crafts by this sort of content and going cold turkey on it, even if that means enduring the insufferable world of parenting Instagram, is proving challenging.
+
 I can tell you one thing. I didn't ask for this parent content. One day I had a baby and because the World Wide Web is now just like 4 companies dealing in the illicit world of our personal data, I now get it pushed on me. It's predatory. Dear reader, I don't know if you're a parent but it's a volatile time. Moments are magical and devastating, often at the same time. I haven't cried so much in my lifetime and fuck if I know even remotely what I am doing. It's hard not to look at all the shiny things and say "I want the best for my kid" (even if the best is questionable) or scroll past that reel that promises to ensure your baby sleeps 23 hours a day. This is a time in which you believe anything you do can be the completely wrong thing to do. And I think this is what good parenting is. Believing you can be better for your child and questioning all the decisions along the way. Companies preying on this vulnerability should be ashamed. Not all moments deserve to be about views.
