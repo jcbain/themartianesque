@@ -554,7 +554,58 @@ function SheetWindow({ title, onClose, children, visible }) {
 
 // ─── CONTENT VIEWS ───────────────────────────────────────────────────────────
 
-function PostContent({ post }) {
+function getTagCounts(posts) {
+  const counts = {};
+  for (const post of posts) {
+    for (const tag of post.tags ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function getAllTags(posts) {
+  return Object.keys(getTagCounts(posts)).sort();
+}
+
+function filterPostsByTags(posts, activeTags) {
+  if (!activeTags.length) return posts;
+  return posts.filter((post) =>
+    activeTags.some((tag) => (post.tags ?? []).includes(tag))
+  );
+}
+
+function LabelChip({ label, count, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      style={{
+        margin: 0,
+        padding: "1px 7px",
+        border: "1px solid black",
+        background: active ? "black" : "white",
+        color: active ? "white" : "black",
+        fontFamily: "Geneva, sans-serif",
+        fontSize: 10,
+        cursor: "pointer",
+        lineHeight: 1.4,
+      }}
+    >
+      {label}
+      {count != null && (
+        <span style={{ marginLeft: 3, opacity: 0.65, fontSize: 9 }}>
+          ({count})
+        </span>
+      )}
+    </button>
+  );
+}
+
+function PostContent({ post, activeTags = [], onToggleTag }) {
   return (
     <div
       style={{
@@ -608,28 +659,116 @@ function PostContent({ post }) {
           marginTop: 24,
           paddingTop: 10,
           borderTop: "1px solid #ddd",
-          fontSize: 11,
-          color: "#aaa",
           fontFamily: "Geneva, sans-serif",
-          display: "flex",
-          justifyContent: "space-between",
         }}
       >
-        <span>{post.wordCount} words</span>
-        <span>TextEdit v3.5</span>
+        {(post.tags ?? []).length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 4,
+              marginBottom: 10,
+            }}
+          >
+            {post.tags.map((tag) => (
+              <LabelChip
+                key={tag}
+                label={tag}
+                active={activeTags.includes(tag)}
+                onClick={() => onToggleTag?.(tag)}
+              />
+            ))}
+          </div>
+        )}
+        <div
+          style={{
+            fontSize: 11,
+            color: "#aaa",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>{post.wordCount} words</span>
+          <span>TextEdit v3.5</span>
+        </div>
       </div>
     </div>
   );
 }
 
-function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
+function ArchiveContent({
+  onOpenPost,
+  posts,
+  selectedId: selectedIdProp,
+  activeTags = [],
+  onToggleTag,
+  onClearTags,
+  compact = false,
+}) {
   const [internalSelected, setInternalSelected] = useState(null);
   const selected = selectedIdProp ?? internalSelected;
+  const tagCounts = getTagCounts(posts);
+  const allTags = getAllTags(posts);
+  const visiblePosts = filterPostsByTags(posts, activeTags);
+
   return (
     <div>
+      {allTags.length > 0 && (
+        <div
+          style={{
+            padding: "6px 8px",
+            borderBottom: "1px solid #ddd",
+            background: "#f5f5f5",
+            fontFamily: "Geneva, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: "bold",
+              marginBottom: 5,
+              fontFamily: "Chicago, Geneva, sans-serif",
+            }}
+          >
+            Labels
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {allTags.map((tag) => (
+              <LabelChip
+                key={tag}
+                label={tag}
+                count={tagCounts[tag]}
+                active={activeTags.includes(tag)}
+                onClick={() => onToggleTag?.(tag)}
+              />
+            ))}
+          </div>
+          {activeTags.length > 0 && onClearTags && (
+            <button
+              type="button"
+              onClick={onClearTags}
+              style={{
+                margin: "6px 0 0",
+                padding: 0,
+                border: "none",
+                background: "none",
+                fontFamily: "Geneva, sans-serif",
+                fontSize: 10,
+                color: "#666",
+                textDecoration: "underline",
+                cursor: "pointer",
+              }}
+            >
+              Show all
+            </button>
+          )}
+        </div>
+      )}
       <div
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: compact ? "1fr 52px" : "1fr 56px 72px",
           borderBottom: "1px solid black",
           fontFamily: "Geneva, sans-serif",
           fontSize: 11,
@@ -638,7 +777,6 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
       >
         <div
           style={{
-            flex: 1,
             padding: "5px 10px",
             borderRight: "1px solid #ccc",
           }}
@@ -647,15 +785,18 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
         </div>
         <div
           style={{
-            width: 80,
             padding: "5px 8px",
-            borderRight: "1px solid #ccc",
+            borderRight: compact ? "none" : "1px solid #ccc",
+            textAlign: "right",
           }}
         >
           Words
         </div>
+        {!compact && (
+          <div style={{ padding: "5px 8px" }}>Labels</div>
+        )}
       </div>
-      {posts.map((post) => (
+      {visiblePosts.map((post) => (
         <div
           key={post.id}
           onClick={() => {
@@ -663,7 +804,8 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
             onOpenPost(post);
           }}
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: compact ? "1fr 52px" : "1fr 56px 72px",
             alignItems: "center",
             background: selected === post.id ? "black" : "white",
             color: selected === post.id ? "white" : "black",
@@ -671,14 +813,21 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
             padding: "10px 10px",
             cursor: "pointer",
             WebkitTapHighlightColor: "transparent",
+            gap: 6,
           }}
         >
-          <div
-            style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <PostFileIcon size={22} invert={selected === post.id} />
-            <div>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 13 }}>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: "Geneva, sans-serif",
+                  fontSize: 13,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {post.title}
               </div>
               <div
@@ -698,10 +847,25 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
               fontFamily: "Geneva, sans-serif",
               fontSize: 12,
               color: selected === post.id ? "#ccc" : "#666",
+              textAlign: "right",
             }}
           >
             {post.wordCount}
           </div>
+          {!compact && (
+            <div
+              style={{
+                fontFamily: "Geneva, sans-serif",
+                fontSize: 10,
+                color: selected === post.id ? "#ccc" : "#888",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {(post.tags ?? []).join(", ")}
+            </div>
+          )}
         </div>
       ))}
       <div
@@ -713,7 +877,8 @@ function ArchiveContent({ onOpenPost, posts, selectedId: selectedIdProp }) {
           borderTop: "1px solid #eee",
         }}
       >
-        {posts.length} items
+        {visiblePosts.length} of {posts.length} items
+        {activeTags.length > 0 ? ` · ${activeTags.join(", ")}` : ""}
       </div>
     </div>
   );
@@ -1190,6 +1355,9 @@ function MobileLayout({
   onOpenPostRoute,
   onClearPostRoute,
   posts,
+  activeTags,
+  onToggleTag,
+  onClearTags,
 }) {
   const [sheet, setSheet] = useState(null); // { type, post? }
   const [postSheet, setPostSheet] = useState(null);
@@ -1348,7 +1516,14 @@ function MobileLayout({
         visible={sheet?.type === "archive"}
         onClose={() => setSheet(null)}
       >
-        <ArchiveContent onOpenPost={openPost} posts={posts} />
+        <ArchiveContent
+          onOpenPost={openPost}
+          posts={posts}
+          activeTags={activeTags}
+          onToggleTag={onToggleTag}
+          onClearTags={onClearTags}
+          compact
+        />
       </SheetWindow>
 
       {/* About sheet */}
@@ -1369,7 +1544,16 @@ function MobileLayout({
           onClearPostRoute();
         }}
       >
-        {postSheet && <PostContent post={postSheet} />}
+        {postSheet && (
+          <PostContent
+            post={postSheet}
+            activeTags={activeTags}
+            onToggleTag={(tag) => {
+              onToggleTag(tag);
+              setSheet({ type: "archive" });
+            }}
+          />
+        )}
       </SheetWindow>
 
       {/* Bottom finder bar */}
@@ -1392,6 +1576,9 @@ function WideLayout({
   onOpenPostRoute,
   onClearPostRoute,
   posts,
+  activeTags,
+  onToggleTag,
+  onClearTags,
 }) {
   const didDefaultOpen = useRef(false);
   const [activeMenu, setActiveMenu] = useState(null);
@@ -1485,6 +1672,19 @@ function WideLayout({
         { label: "Open Archive…", action: openArchive },
         "---",
         { label: "About Me…", action: openAbout },
+      ],
+    },
+    {
+      label: "View",
+      items: [
+        ...getAllTags(posts).map((tag) => ({
+          label: activeTags.includes(tag) ? `✓ ${tag}` : tag,
+          action: () => onToggleTag(tag),
+        })),
+        ...(getAllTags(posts).length > 0 ? ["---"] : []),
+        ...(getAllTags(posts).length > 0
+          ? [{ label: "Show All Labels", action: onClearTags }]
+          : []),
       ],
     },
     {
@@ -1676,6 +1876,9 @@ function WideLayout({
                   onOpenPost={openPost}
                   posts={posts}
                   selectedId={selectedPostId}
+                  activeTags={activeTags}
+                  onToggleTag={onToggleTag}
+                  onClearTags={onClearTags}
                 />
               </div>
             </div>
@@ -1704,7 +1907,14 @@ function WideLayout({
                 }}
               >
                 {rightPanel === "post" && activePost && (
-                  <PostContent post={activePost} />
+                  <PostContent
+                    post={activePost}
+                    activeTags={activeTags}
+                    onToggleTag={(tag) => {
+                      onToggleTag(tag);
+                      openArchive();
+                    }}
+                  />
                 )}
                 {rightPanel === "trash" && (
                   <div
@@ -1771,6 +1981,14 @@ export default function MacClassicResponsive({ posts = [] }) {
   });
   const appFilter = darkMode ? "invert(1) hue-rotate(180deg)" : "none";
 
+  const [activeTags, setActiveTags] = useState([]);
+  const toggleTag = useCallback((tag) => {
+    setActiveTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }, []);
+  const clearTags = useCallback(() => setActiveTags([]), []);
+
   const onOpenPostRoute = useCallback((postId) => {
     if (typeof window === "undefined") return;
     const targetPath = `/post/${postId}`;
@@ -1809,6 +2027,9 @@ export default function MacClassicResponsive({ posts = [] }) {
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
               posts={posts}
+              activeTags={activeTags}
+              onToggleTag={toggleTag}
+              onClearTags={clearTags}
             />
           ) : (
             <WideLayout
@@ -1818,6 +2039,9 @@ export default function MacClassicResponsive({ posts = [] }) {
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
               posts={posts}
+              activeTags={activeTags}
+              onToggleTag={toggleTag}
+              onClearTags={clearTags}
             />
           )}
         </div>
