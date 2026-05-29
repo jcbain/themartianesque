@@ -1786,7 +1786,7 @@ function WideLayout({
           display: "flex",
           flexDirection: "column",
           gap: 4,
-          zIndex: 2,
+          zIndex: 1,
         }}
       >
         {desktopIcons.map((i) => (
@@ -1807,7 +1807,7 @@ function WideLayout({
           display: "flex",
           flexDirection: "column",
           gap: 4,
-          zIndex: 2,
+          zIndex: 1,
         }}
       >
         {bottomIcons.map((i) => (
@@ -1848,7 +1848,7 @@ function WideLayout({
             transform: "translateX(-50%)",
             width: "min(960px, calc(100% - 48px))",
             height: `calc(100vh - ${MENUBAR_H + 40}px)`,
-            zIndex: 1,
+            zIndex: 2,
             background: "white",
             border: "1.5px solid black",
             boxShadow: "2px 2px 0 black",
