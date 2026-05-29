@@ -318,6 +318,7 @@ function BootScreen({ onDone }) {
 
 const MENUBAR_H = 20;
 const SIDEBAR_W = 300;
+const ARCHIVE_LIST_ICON_SIZE = 16;
 
 function SplitPanelHeader({ title, onClose }) {
   return (
@@ -756,7 +757,6 @@ function ArchiveContent({
   activeTags = [],
   onToggleTag,
   onClearTags,
-  compact = false,
   statusLabel = "items",
 }) {
   const [internalSelected, setInternalSelected] = useState(null);
@@ -820,86 +820,77 @@ function ArchiveContent({
       )}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: compact ? "1fr 52px" : "1fr 56px 72px",
+          padding: "5px 10px",
           borderBottom: "1px solid black",
           fontFamily: "Geneva, sans-serif",
           fontSize: 11,
           background: "#f5f5f5",
         }}
       >
-        <div
-          style={{
-            padding: "5px 10px",
-            borderRight: "1px solid #ccc",
-          }}
-        >
-          Name
-        </div>
-        <div
-          style={{
-            padding: "5px 8px",
-            borderRight: compact ? "none" : "1px solid #ccc",
-            textAlign: "right",
-          }}
-        >
-          Words
-        </div>
-        {!compact && (
-          <div style={{ padding: "5px 8px" }}>Labels</div>
-        )}
+        Title
       </div>
-      {visiblePosts.map((post) => (
-        <div
-          key={post.id}
-          onClick={() => {
-            if (selectedIdProp === undefined) setInternalSelected(post.id);
-            onOpenPost(post);
-          }}
-          style={{
-            display: "grid",
-            gridTemplateColumns: compact ? "1fr 52px" : "1fr 56px 72px",
-            alignItems: "center",
-            background: selected === post.id ? "black" : "white",
-            color: selected === post.id ? "white" : "black",
-            borderBottom: "1px solid #eee",
-            padding: "10px 10px",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-            gap: 6,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+      {visiblePosts.map((post) => {
+        const isSelected = selected === post.id;
+        const meta = [
+          post.date,
+          `${post.wordCount} words`,
+          ...(post.tags ?? []),
+        ].join(" · ");
+
+        return (
+          <div
+            key={post.id}
+            onClick={() => {
+              if (selectedIdProp === undefined) setInternalSelected(post.id);
+              onOpenPost(post);
+            }}
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+              background: isSelected ? "black" : "white",
+              color: isSelected ? "white" : "black",
+              borderBottom: "1px solid #eee",
+              padding: "9px 10px 9px 8px",
+              cursor: "pointer",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
             <div
               style={{
                 flexShrink: 0,
-                width: 22 * 0.867,
-                height: 22,
+                width: ARCHIVE_LIST_ICON_SIZE * 0.867,
+                height: ARCHIVE_LIST_ICON_SIZE,
+                paddingTop: 2,
                 display: "flex",
-                alignItems: "center",
+                alignItems: "flex-start",
                 justifyContent: "center",
               }}
             >
-              <PostFileIcon size={22} invert={selected === post.id} />
+              <PostFileIcon
+                size={ARCHIVE_LIST_ICON_SIZE}
+                invert={isSelected}
+              />
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontFamily: "Geneva, sans-serif",
-                  fontSize: 13,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
                   display: "flex",
-                  alignItems: "center",
+                  flexWrap: "wrap",
+                  alignItems: "baseline",
                   gap: 6,
                 }}
               >
                 <span
                   style={{
+                    fontFamily: "Geneva, sans-serif",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    lineHeight: 1.35,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
                     overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
                   }}
                 >
                   {post.title}
@@ -911,9 +902,9 @@ function ArchiveContent({
                       fontSize: 9,
                       fontFamily: "Chicago, Geneva, sans-serif",
                       fontWeight: "bold",
-                      border: `1px dashed ${selected === post.id ? "#ccc" : "#999"}`,
+                      border: `1px dashed ${isSelected ? "#ccc" : "#999"}`,
                       padding: "0 3px",
-                      color: selected === post.id ? "#ddd" : "#888",
+                      color: isSelected ? "#ddd" : "#888",
                     }}
                   >
                     DRAFT
@@ -923,41 +914,21 @@ function ArchiveContent({
               <div
                 style={{
                   fontFamily: "Geneva, sans-serif",
-                  fontSize: 11,
-                  color: selected === post.id ? "#ccc" : "#888",
-                  marginTop: 2,
+                  fontSize: 9,
+                  color: isSelected ? "#ccc" : "#888",
+                  marginTop: 4,
+                  lineHeight: 1.4,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {post.date}
+                {meta}
               </div>
             </div>
           </div>
-          <div
-            style={{
-              fontFamily: "Geneva, sans-serif",
-              fontSize: 12,
-              color: selected === post.id ? "#ccc" : "#666",
-              textAlign: "right",
-            }}
-          >
-            {post.wordCount}
-          </div>
-          {!compact && (
-            <div
-              style={{
-                fontFamily: "Geneva, sans-serif",
-                fontSize: 10,
-                color: selected === post.id ? "#ccc" : "#888",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {(post.tags ?? []).join(", ")}
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
       <div
         style={{
           padding: "8px 10px",
@@ -1617,7 +1588,6 @@ function MobileLayout({
           activeTags={activeTags}
           onToggleTag={onToggleTag}
           onClearTags={onClearTags}
-          compact
         />
       </SheetWindow>
 
@@ -1633,7 +1603,6 @@ function MobileLayout({
           activeTags={activeTrashTags}
           onToggleTag={onToggleTrashTag}
           onClearTags={onClearTrashTags}
-          compact
           statusLabel="items in Trash"
         />
       </SheetWindow>
