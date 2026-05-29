@@ -2,6 +2,7 @@
 id: 1
 title: "Welcome to the Martianesque"
 pubDate: 2026-04-16
+tags: ["meta", "parenting", "personal"]
 ---
 It's been a minute since I've written for myself. You may be saying, "but James, this is a blog and the whole world has access to it. It's a stretch to call it 'for yourself'." To that one reader out there holding on to this conviction I only have 2 things to say to you. 1. Thank you. I'm happy that you've found my little corner of the internet and flattered you'd think that there was more than just you reading this thing. My mother wouldn't even read this. And 2. Blogs are always personal to me. I use them as a distillation step in the process of my thinking. It's only fortuitous for you, dear individual reader, that I'm opening a window into my brain for you to bear witness. You're welcome and be careful.
 

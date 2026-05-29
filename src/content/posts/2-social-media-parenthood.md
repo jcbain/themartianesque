@@ -2,6 +2,7 @@
 id: 2
 title: "Parenting the Feed"
 pubDate: 2026-04-24
+tags: ["parenting", "social media", "culture"]
 ---
 
 New parenthood is an annoying time in the algorithmic environment. Not as annoying as that one time Facebook allowed the proliferation of false information handing a presidential victory to a man with a moral compass more questionable than a plunger. But parenthood comes in at a distant second on the scale of "ways in which social media fucks with our brains."

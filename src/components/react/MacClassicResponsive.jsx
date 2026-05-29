@@ -10,6 +10,18 @@ function getPostIdFromPath(pathname, posts) {
   return posts.some((post) => post.id === id) ? id : null;
 }
 
+function getBlogPosts(posts) {
+  return posts.filter((post) => (post.kind ?? "blog") === "blog");
+}
+
+function getTrashPosts(posts) {
+  return posts.filter((post) => post.kind === "trash");
+}
+
+function isTrashPost(post) {
+  return post?.kind === "trash";
+}
+
 function useIsMobile() {
   const [mobile, setMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth < 768
@@ -48,46 +60,6 @@ function useDarkModeSetting() {
   }, []);
 
   return [darkMode, setDarkMode];
-}
-
-function useWindowManager() {
-  const [windows, setWindows] = useState([]);
-  const [zTop, setZTop] = useState(10);
-  const open = useCallback((win) => {
-    setZTop((z) => {
-      const next = z + 1;
-      setWindows((ws) => {
-        const ex = ws.find((w) => w.id === win.id);
-        if (ex) return ws.map((w) => (w.id === win.id ? { ...w, z: next } : w));
-        return [...ws, { ...win, z: next }];
-      });
-      return next;
-    });
-  }, []);
-  const close = useCallback(
-    (id) => setWindows((ws) => ws.filter((w) => w.id !== id)),
-    []
-  );
-  const focus = useCallback((id) => {
-    setZTop((z) => {
-      const next = z + 1;
-      setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, z: next } : w)));
-      return next;
-    });
-  }, []);
-  const move = useCallback(
-    (id, x, y) =>
-      setWindows((ws) => ws.map((w) => (w.id === id ? { ...w, x, y } : w))),
-    []
-  );
-  const resize = useCallback(
-    (id, w, h) =>
-      setWindows((ws) =>
-        ws.map((win) => (win.id === id ? { ...win, w, h } : win))
-      ),
-    []
-  );
-  return { windows, open, close, focus, move, resize };
 }
 
 // ─── SVG ICONS ───────────────────────────────────────────────────────────────
@@ -207,8 +179,16 @@ function TrashIcon({ size = 32 }) {
 
 function PostFileIcon({ size = 26, invert = false }) {
   const stroke = invert ? "white" : "black";
+  const width = size * 0.867;
   return (
-    <svg width={size * 0.867} height={size} viewBox="0 0 26 30" fill="none">
+    <svg
+      width={width}
+      height={size}
+      viewBox="0 0 26 30"
+      fill="none"
+      style={{ flexShrink: 0, display: "block", width, height: size }}
+      aria-hidden
+    >
       <rect
         x="2"
         y="1"
@@ -336,39 +316,39 @@ function BootScreen({ onDone }) {
   );
 }
 
-// ─── SHARED: MAC TITLE BAR ────────────────────────────────────────────────────
+const MENUBAR_H = 20;
+const SIDEBAR_W = 300;
+const ARCHIVE_LIST_ICON_SIZE = 16;
 
-function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
+function SplitPanelHeader({ title, onClose }) {
   return (
     <div
-      onMouseDown={draggable ? onMouseDown : undefined}
       style={{
         height: 22,
         flexShrink: 0,
-        background: "white",
+        background: "#f5f5f5",
         borderBottom: "1px solid black",
         display: "flex",
         alignItems: "center",
-        cursor: draggable ? "default" : "default",
         position: "relative",
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent 1px, #aaa 1px, #aaa 2px)`,
-        backgroundSize: "100% 2px",
         userSelect: "none",
       }}
     >
-      <div
-        onClick={onClose}
-        style={{
-          width: 13,
-          height: 13,
-          border: "1.5px solid black",
-          background: "white",
-          marginLeft: 6,
-          flexShrink: 0,
-          cursor: "default",
-          zIndex: 1,
-        }}
-      />
+      {onClose && (
+        <div
+          onClick={onClose}
+          style={{
+            width: 13,
+            height: 13,
+            border: "1.5px solid black",
+            background: "white",
+            marginLeft: 6,
+            flexShrink: 0,
+            cursor: "default",
+            zIndex: 1,
+          }}
+        />
+      )}
       <div
         style={{
           position: "absolute",
@@ -381,12 +361,14 @@ function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
       >
         <span
           style={{
-            background: "white",
-            padding: "0 8px",
             fontFamily: "Chicago, 'Charcoal', Geneva, sans-serif",
             fontSize: 12,
             fontWeight: "bold",
             lineHeight: "22px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: "85%",
           }}
         >
           {title}
@@ -396,82 +378,17 @@ function MacTitleBar({ title, onClose, draggable = true, onMouseDown }) {
   );
 }
 
-// ─── DESKTOP: DRAGGABLE WINDOW ────────────────────────────────────────────────
-
-const MENUBAR_H = 20;
-
-function DraggableWindow({
-  win,
-  onClose,
-  onFocus,
-  onMove,
-  onResize,
-  children,
-}) {
-  const dragging = useRef(false);
-  const resizing = useRef(false);
-  const offset = useRef({ x: 0, y: 0 });
-  const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 });
-
-  const MIN_WINDOW_W = 280;
-  const MIN_WINDOW_H = 180;
-
-  const handleMouseDown = (e) => {
-    dragging.current = true;
-    offset.current = { x: e.clientX - win.x, y: e.clientY - win.y };
-    onFocus();
-    e.preventDefault();
-  };
-
-  const handleResizeMouseDown = (e) => {
-    resizing.current = true;
-    resizeStart.current = { x: e.clientX, y: e.clientY, w: win.w, h: win.h };
-    onFocus();
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  useEffect(() => {
-    const onMoveHandler = (e) => {
-      if (dragging.current) {
-        onMove(
-          Math.max(0, e.clientX - offset.current.x),
-          Math.max(MENUBAR_H, e.clientY - offset.current.y)
-        );
-      }
-      if (resizing.current) {
-        const dx = e.clientX - resizeStart.current.x;
-        const dy = e.clientY - resizeStart.current.y;
-        const maxW = Math.max(MIN_WINDOW_W, window.innerWidth - win.x);
-        const maxH = Math.max(MIN_WINDOW_H, window.innerHeight - win.y);
-        onResize(
-          Math.min(maxW, Math.max(MIN_WINDOW_W, resizeStart.current.w + dx)),
-          Math.min(maxH, Math.max(MIN_WINDOW_H, resizeStart.current.h + dy))
-        );
-      }
-    };
-    const onUp = () => {
-      dragging.current = false;
-      resizing.current = false;
-    };
-    window.addEventListener("mousemove", onMoveHandler);
-    window.addEventListener("mouseup", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMoveHandler);
-      window.removeEventListener("mouseup", onUp);
-    };
-  }, [onMove]);
-
+function DesktopWindow({ title, onClose, children, width = 400 }) {
   return (
     <div
-      onMouseDown={onFocus}
       style={{
-        position: "fixed",
-        left: win.x,
-        top: win.y,
-        width: win.w,
-        height: win.h,
-        zIndex: win.z,
+        position: "absolute",
+        top: MENUBAR_H + 48,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: `min(${width}px, calc(100% - 48px))`,
+        maxHeight: `calc(100vh - ${MENUBAR_H + 64}px)`,
+        zIndex: 3,
         background: "white",
         border: "1.5px solid black",
         boxShadow: "2px 2px 0 black",
@@ -480,35 +397,8 @@ function DraggableWindow({
         overflow: "hidden",
       }}
     >
-      <MacTitleBar
-        title={win.title}
-        onClose={onClose}
-        onMouseDown={handleMouseDown}
-      />
-      <div
-        style={{
-          flex: 1,
-          overflow: "auto",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {children}
-      </div>
-      <div
-        onMouseDown={handleResizeMouseDown}
-        style={{
-          position: "absolute",
-          width: 14,
-          height: 14,
-          right: 2,
-          bottom: 2,
-          cursor: "nwse-resize",
-          background:
-            "repeating-linear-gradient(135deg, transparent 0 2px, black 2px 3px)",
-          opacity: 0.55,
-        }}
-      />
+      <SplitPanelHeader title={title} onClose={onClose} />
+      <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>{children}</div>
     </div>
   );
 }
@@ -685,7 +575,58 @@ function SheetWindow({ title, onClose, children, visible }) {
 
 // ─── CONTENT VIEWS ───────────────────────────────────────────────────────────
 
-function PostContent({ post }) {
+function getTagCounts(posts) {
+  const counts = {};
+  for (const post of posts) {
+    for (const tag of post.tags ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
+function getAllTags(posts) {
+  return Object.keys(getTagCounts(posts)).sort();
+}
+
+function filterPostsByTags(posts, activeTags) {
+  if (!activeTags.length) return posts;
+  return posts.filter((post) =>
+    activeTags.some((tag) => (post.tags ?? []).includes(tag))
+  );
+}
+
+function LabelChip({ label, count, active, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      style={{
+        margin: 0,
+        padding: "1px 7px",
+        border: "1px solid black",
+        background: active ? "black" : "white",
+        color: active ? "white" : "black",
+        fontFamily: "Geneva, sans-serif",
+        fontSize: 10,
+        cursor: "pointer",
+        lineHeight: 1.4,
+      }}
+    >
+      {label}
+      {count != null && (
+        <span style={{ marginLeft: 3, opacity: 0.65, fontSize: 9 }}>
+          ({count})
+        </span>
+      )}
+    </button>
+  );
+}
+
+function PostContent({ post, activeTags = [], onToggleTag }) {
   return (
     <div
       style={{
@@ -706,9 +647,27 @@ function PostContent({ post }) {
             fontWeight: "bold",
             fontFamily: "Chicago, Geneva, sans-serif",
             lineHeight: 1.3,
+            display: "flex",
+            alignItems: "baseline",
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
           {post.title}
+          {post.draft && (
+            <span
+              style={{
+                fontSize: 10,
+                fontFamily: "Chicago, Geneva, sans-serif",
+                fontWeight: "bold",
+                border: "1px dashed #999",
+                padding: "1px 6px",
+                color: "#666",
+              }}
+            >
+              DRAFT
+            </span>
+          )}
         </div>
         <div
           style={{
@@ -721,6 +680,20 @@ function PostContent({ post }) {
           {post.date}
         </div>
       </div>
+      {post.draft && (
+        <div
+          style={{
+            fontSize: 10,
+            fontFamily: "Geneva, sans-serif",
+            color: "#666",
+            border: "1px dashed #999",
+            padding: "5px 8px",
+            marginBottom: 14,
+          }}
+        >
+          Draft — visible in dev only; excluded from production builds.
+        </div>
+      )}
       {post.content.split("\n\n").map((p, i) => (
         <p
           key={i}
@@ -739,101 +712,223 @@ function PostContent({ post }) {
           marginTop: 24,
           paddingTop: 10,
           borderTop: "1px solid #ddd",
-          fontSize: 11,
-          color: "#aaa",
           fontFamily: "Geneva, sans-serif",
-          display: "flex",
-          justifyContent: "space-between",
         }}
       >
-        <span>{post.wordCount} words</span>
-        <span>TextEdit v3.5</span>
+        {(post.tags ?? []).length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 4,
+              marginBottom: 10,
+            }}
+          >
+            {post.tags.map((tag) => (
+              <LabelChip
+                key={tag}
+                label={tag}
+                active={activeTags.includes(tag)}
+                onClick={() => onToggleTag?.(tag)}
+              />
+            ))}
+          </div>
+        )}
+        <div
+          style={{
+            fontSize: 11,
+            color: "#aaa",
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>{post.wordCount} words</span>
+          <span>TextEdit v3.5</span>
+        </div>
       </div>
     </div>
   );
 }
 
-function ArchiveContent({ onOpenPost, posts }) {
-  const [selected, setSelected] = useState(null);
+function ArchiveContent({
+  onOpenPost,
+  posts,
+  selectedId: selectedIdProp,
+  activeTags = [],
+  onToggleTag,
+  onClearTags,
+  statusLabel = "items",
+}) {
+  const [internalSelected, setInternalSelected] = useState(null);
+  const selected = selectedIdProp ?? internalSelected;
+  const tagCounts = getTagCounts(posts);
+  const allTags = getAllTags(posts);
+  const visiblePosts = filterPostsByTags(posts, activeTags);
+
   return (
     <div>
+      {allTags.length > 0 && (
+        <div
+          style={{
+            padding: "6px 8px",
+            borderBottom: "1px solid #ddd",
+            background: "#f5f5f5",
+            fontFamily: "Geneva, sans-serif",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: "bold",
+              marginBottom: 5,
+              fontFamily: "Chicago, Geneva, sans-serif",
+            }}
+          >
+            Labels
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {allTags.map((tag) => (
+              <LabelChip
+                key={tag}
+                label={tag}
+                count={tagCounts[tag]}
+                active={activeTags.includes(tag)}
+                onClick={() => onToggleTag?.(tag)}
+              />
+            ))}
+          </div>
+          {activeTags.length > 0 && onClearTags && (
+            <button
+              type="button"
+              onClick={onClearTags}
+              style={{
+                margin: "6px 0 0",
+                padding: 0,
+                border: "none",
+                background: "none",
+                fontFamily: "Geneva, sans-serif",
+                fontSize: 10,
+                color: "#666",
+                textDecoration: "underline",
+                cursor: "pointer",
+              }}
+            >
+              Show all
+            </button>
+          )}
+        </div>
+      )}
       <div
         style={{
-          display: "flex",
+          padding: "5px 10px",
           borderBottom: "1px solid black",
           fontFamily: "Geneva, sans-serif",
           fontSize: 11,
           background: "#f5f5f5",
         }}
       >
-        <div
-          style={{
-            flex: 1,
-            padding: "5px 10px",
-            borderRight: "1px solid #ccc",
-          }}
-        >
-          Name
-        </div>
-        <div
-          style={{
-            width: 80,
-            padding: "5px 8px",
-            borderRight: "1px solid #ccc",
-          }}
-        >
-          Words
-        </div>
+        Title
       </div>
-      {posts.map((post) => (
-        <div
-          key={post.id}
-          onClick={() => {
-            setSelected(post.id);
-            onOpenPost(post);
-          }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            background: selected === post.id ? "black" : "white",
-            color: selected === post.id ? "white" : "black",
-            borderBottom: "1px solid #eee",
-            padding: "10px 10px",
-            cursor: "pointer",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
+      {visiblePosts.map((post) => {
+        const isSelected = selected === post.id;
+        const meta = [
+          post.date,
+          `${post.wordCount} words`,
+          ...(post.tags ?? []),
+        ].join(" · ");
+
+        return (
           <div
-            style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}
+            key={post.id}
+            onClick={() => {
+              if (selectedIdProp === undefined) setInternalSelected(post.id);
+              onOpenPost(post);
+            }}
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+              background: isSelected ? "black" : "white",
+              color: isSelected ? "white" : "black",
+              borderBottom: "1px solid #eee",
+              padding: "9px 10px 9px 8px",
+              cursor: "pointer",
+              WebkitTapHighlightColor: "transparent",
+            }}
           >
-            <PostFileIcon size={22} invert={selected === post.id} />
-            <div>
-              <div style={{ fontFamily: "Geneva, sans-serif", fontSize: 13 }}>
-                {post.title}
+            <div
+              style={{
+                flexShrink: 0,
+                width: ARCHIVE_LIST_ICON_SIZE * 0.867,
+                height: ARCHIVE_LIST_ICON_SIZE,
+                paddingTop: 2,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "center",
+              }}
+            >
+              <PostFileIcon
+                size={ARCHIVE_LIST_ICON_SIZE}
+                invert={isSelected}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "baseline",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Geneva, sans-serif",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    lineHeight: 1.35,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {post.title}
+                </span>
+                {post.draft && (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontSize: 9,
+                      fontFamily: "Chicago, Geneva, sans-serif",
+                      fontWeight: "bold",
+                      border: `1px dashed ${isSelected ? "#ccc" : "#999"}`,
+                      padding: "0 3px",
+                      color: isSelected ? "#ddd" : "#888",
+                    }}
+                  >
+                    DRAFT
+                  </span>
+                )}
               </div>
               <div
                 style={{
                   fontFamily: "Geneva, sans-serif",
-                  fontSize: 11,
-                  color: selected === post.id ? "#ccc" : "#888",
-                  marginTop: 2,
+                  fontSize: 9,
+                  color: isSelected ? "#ccc" : "#888",
+                  marginTop: 4,
+                  lineHeight: 1.4,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {post.date}
+                {meta}
               </div>
             </div>
           </div>
-          <div
-            style={{
-              fontFamily: "Geneva, sans-serif",
-              fontSize: 12,
-              color: selected === post.id ? "#ccc" : "#666",
-            }}
-          >
-            {post.wordCount}
-          </div>
-        </div>
-      ))}
+        );
+      })}
       <div
         style={{
           padding: "8px 10px",
@@ -843,7 +938,8 @@ function ArchiveContent({ onOpenPost, posts }) {
           borderTop: "1px solid #eee",
         }}
       >
-        {posts.length} items
+        {visiblePosts.length} of {posts.length} {statusLabel}
+        {activeTags.length > 0 ? ` · ${activeTags.join(", ")}` : ""}
       </div>
     </div>
   );
@@ -947,13 +1043,15 @@ function AboutContent() {
 
 // ─── DESKTOP ICON ─────────────────────────────────────────────────────────────
 
-function DesktopIcon({ iconEl, label, onDoubleClick }) {
+function DesktopIcon({ iconEl, label, onActivate }) {
   const [sel, setSel] = useState(false);
   return (
     <div
       tabIndex={0}
-      onClick={() => setSel(true)}
-      onDoubleClick={onDoubleClick}
+      onClick={() => {
+        setSel(true);
+        onActivate();
+      }}
       onBlur={() => setSel(false)}
       style={{
         display: "flex",
@@ -1318,7 +1416,15 @@ function MobileLayout({
   onOpenPostRoute,
   onClearPostRoute,
   posts,
+  activeTags,
+  onToggleTag,
+  onClearTags,
+  activeTrashTags,
+  onToggleTrashTag,
+  onClearTrashTags,
 }) {
+  const blogPosts = getBlogPosts(posts);
+  const trashPosts = getTrashPosts(posts);
   const [sheet, setSheet] = useState(null); // { type, post? }
   const [postSheet, setPostSheet] = useState(null);
 
@@ -1362,7 +1468,7 @@ function MobileLayout({
       id: "trash",
       label: "Trash",
       iconEl: <TrashIcon size={30} />,
-      action: () => {},
+      action: () => setSheet({ type: "trash" }),
     },
   ];
 
@@ -1429,7 +1535,7 @@ function MobileLayout({
         >
           Recent Posts
         </div>
-        {posts.slice(0, 3).map((post) => (
+        {blogPosts.slice(0, 3).map((post) => (
           <div
             key={post.id}
             onClick={() => openPost(post)}
@@ -1476,7 +1582,29 @@ function MobileLayout({
         visible={sheet?.type === "archive"}
         onClose={() => setSheet(null)}
       >
-        <ArchiveContent onOpenPost={openPost} posts={posts} />
+        <ArchiveContent
+          onOpenPost={openPost}
+          posts={blogPosts}
+          activeTags={activeTags}
+          onToggleTag={onToggleTag}
+          onClearTags={onClearTags}
+        />
+      </SheetWindow>
+
+      {/* Trash sheet */}
+      <SheetWindow
+        title="Trash"
+        visible={sheet?.type === "trash"}
+        onClose={() => setSheet(null)}
+      >
+        <ArchiveContent
+          onOpenPost={openPost}
+          posts={trashPosts}
+          activeTags={activeTrashTags}
+          onToggleTag={onToggleTrashTag}
+          onClearTags={onClearTrashTags}
+          statusLabel="items in Trash"
+        />
       </SheetWindow>
 
       {/* About sheet */}
@@ -1497,7 +1625,23 @@ function MobileLayout({
           onClearPostRoute();
         }}
       >
-        {postSheet && <PostContent post={postSheet} />}
+        {postSheet && (
+          <PostContent
+            post={postSheet}
+            activeTags={
+              isTrashPost(postSheet) ? activeTrashTags : activeTags
+            }
+            onToggleTag={(tag) => {
+              if (isTrashPost(postSheet)) {
+                onToggleTrashTag(tag);
+                setSheet({ type: "trash" });
+              } else {
+                onToggleTag(tag);
+                setSheet({ type: "archive" });
+              }
+            }}
+          />
+        )}
       </SheetWindow>
 
       {/* Bottom finder bar */}
@@ -1511,74 +1655,114 @@ function MobileLayout({
   );
 }
 
-// ─── DESKTOP LAYOUT ──────────────────────────────────────────────────────────
+// ─── WIDE LAYOUT (split-pane finder + reader) ────────────────────────────────
 
-function DesktopLayout({
+function WideLayout({
   darkMode,
   onToggleDarkMode,
   routedPostId,
   onOpenPostRoute,
   onClearPostRoute,
   posts,
+  activeTags,
+  onToggleTag,
+  onClearTags,
+  activeTrashTags,
+  onToggleTrashTag,
+  onClearTrashTags,
 }) {
-  const { windows, open, close, focus, move, resize } = useWindowManager();
+  const blogPosts = getBlogPosts(posts);
+  const trashPosts = getTrashPosts(posts);
+  const didDefaultOpen = useRef(false);
   const [activeMenu, setActiveMenu] = useState(null);
-  const getDesktopWindowFrame = useCallback(() => {
-    const fallback = { x: 100, y: 70, w: 640, h: 480 };
-    if (typeof window === "undefined") return fallback;
+  const isBlogHome =
+    typeof window !== "undefined" &&
+    /^\/\/?$/.test(window.location.pathname);
+  const shouldDefaultOpen = isBlogHome && blogPosts.length > 0;
 
-    const targetW = Math.floor(window.innerWidth * 0.8);
-    const targetH = Math.floor(window.innerHeight * 0.8);
-    const w = Math.max(280, Math.min(targetW, window.innerWidth));
-    const h = Math.max(180, Math.min(targetH, window.innerHeight - MENUBAR_H));
-    const x = Math.max(0, Math.floor((window.innerWidth - w) / 2));
-    const y = Math.max(MENUBAR_H, Math.floor((window.innerHeight - h) / 2));
+  const resolveSplitMode = useCallback(
+    (postId) => {
+      if (!postId) return "blog";
+      const post = posts.find((entry) => entry.id === postId);
+      return isTrashPost(post) ? "trash" : "blog";
+    },
+    [posts]
+  );
 
-    return { x, y, w, h };
-  }, []);
+  const [splitMode, setSplitMode] = useState(() => {
+    if (routedPostId) return resolveSplitMode(routedPostId);
+    if (shouldDefaultOpen) return "blog";
+    return null;
+  });
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [rightPanel, setRightPanel] = useState(() =>
+    routedPostId || shouldDefaultOpen ? "post" : "empty"
+  );
+
+  const splitOpen = splitMode != null;
+  const sidebarPosts = splitMode === "trash" ? trashPosts : blogPosts;
+
+  const activePost =
+    routedPostId != null
+      ? posts.find((post) => post.id === routedPostId) ?? null
+      : rightPanel === "post" && splitOpen
+        ? splitMode === "trash"
+          ? trashPosts[0] ?? null
+          : blogPosts[0] ?? null
+        : null;
+
+  const selectedPostId =
+    routedPostId ??
+    (rightPanel === "post" && splitOpen
+      ? splitMode === "trash"
+        ? trashPosts[0]?.id ?? null
+        : blogPosts[0]?.id ?? null
+      : null);
 
   const openPost = useCallback(
     (post) => {
-      const frame = getDesktopWindowFrame();
-      open({
-        id: `post-${post.id}`,
-        type: "post",
-        post,
-        title: post.title,
-        ...frame,
-      });
+      setSplitMode(isTrashPost(post) ? "trash" : "blog");
+      setRightPanel("post");
       onOpenPostRoute(post.id);
     },
-    [open, onOpenPostRoute, getDesktopWindowFrame]
+    [onOpenPostRoute]
   );
 
-  const openArchive = () => {
-    const frame = getDesktopWindowFrame();
-    open({
-      id: "archive",
-      type: "archive",
-      title: "Post Archive",
-      ...frame,
-    });
-  };
-  const openAbout = () => {
-    const frame = getDesktopWindowFrame();
-    open({
-      id: "about",
-      type: "about",
-      title: "About Me",
-      ...frame,
-    });
-  };
-  const openTrash = () => {
-    const frame = getDesktopWindowFrame();
-    open({
-      id: "trash",
-      type: "trash",
-      title: "Trash",
-      ...frame,
-    });
-  };
+  const openArchive = useCallback(() => {
+    setSplitMode("blog");
+    setRightPanel(
+      routedPostId && !isTrashPost(posts.find((post) => post.id === routedPostId))
+        ? "post"
+        : "empty"
+    );
+  }, [routedPostId, posts]);
+
+  const openAbout = useCallback(() => {
+    setAboutOpen(true);
+  }, []);
+
+  const openTrash = useCallback(() => {
+    setSplitMode("trash");
+    setRightPanel(
+      routedPostId && isTrashPost(posts.find((post) => post.id === routedPostId))
+        ? "post"
+        : "empty"
+    );
+    if (!routedPostId || !isTrashPost(posts.find((post) => post.id === routedPostId))) {
+      onClearPostRoute();
+    }
+  }, [onClearPostRoute, posts, routedPostId]);
+
+  const closeSplit = useCallback(() => {
+    setSplitMode(null);
+    setRightPanel("empty");
+    onClearPostRoute();
+  }, [onClearPostRoute]);
+
+  const closeRightPanel = useCallback(() => {
+    setRightPanel("empty");
+    onClearPostRoute();
+  }, [onClearPostRoute]);
 
   const desktopIcons = [
     {
@@ -1610,8 +1794,22 @@ function DesktopLayout({
       label: "File",
       items: [
         { label: "Open Archive…", action: openArchive },
+        { label: "Open Trash…", action: openTrash },
         "---",
         { label: "About Me…", action: openAbout },
+      ],
+    },
+    {
+      label: "View",
+      items: [
+        ...getAllTags(blogPosts).map((tag) => ({
+          label: activeTags.includes(tag) ? `✓ ${tag}` : tag,
+          action: () => onToggleTag(tag),
+        })),
+        ...(getAllTags(blogPosts).length > 0 ? ["---"] : []),
+        ...(getAllTags(blogPosts).length > 0
+          ? [{ label: "Show All Labels", action: onClearTags }]
+          : []),
       ],
     },
     {
@@ -1646,18 +1844,33 @@ function DesktopLayout({
   }, []);
 
   useEffect(() => {
-    if (!routedPostId) return;
-    const matched = posts.find((post) => post.id === routedPostId);
-    if (!matched) return;
-    const frame = getDesktopWindowFrame();
-    open({
-      id: `post-${matched.id}`,
-      type: "post",
-      post: matched,
-      title: matched.title,
-      ...frame,
-    });
-  }, [routedPostId, open, posts, getDesktopWindowFrame]);
+    if (didDefaultOpen.current) return;
+    if (typeof window === "undefined") return;
+    if (routedPostId) {
+      didDefaultOpen.current = true;
+      return;
+    }
+    if (blogPosts.length === 0) return;
+    if (!/^\/\/?$/.test(window.location.pathname)) return;
+
+    didDefaultOpen.current = true;
+    onOpenPostRoute(blogPosts[0].id);
+  }, [routedPostId, blogPosts, onOpenPostRoute]);
+
+  useEffect(() => {
+    if (routedPostId) {
+      setSplitMode(resolveSplitMode(routedPostId));
+      setRightPanel("post");
+    } else {
+      setRightPanel((panel) => (panel === "post" ? "empty" : panel));
+    }
+  }, [routedPostId, resolveSplitMode]);
+
+  const splitTitle = splitMode === "trash" ? "Trash" : "Post Archive";
+
+  const rightTitle = activePost ? activePost.title : splitMode === "trash" ? "Trash" : "Post";
+
+  const showRightClose = rightPanel === "post";
 
   return (
     <div
@@ -1685,7 +1898,6 @@ function DesktopLayout({
         />
       </div>
 
-      {/* Disk icons - top right */}
       <div
         style={{
           position: "absolute",
@@ -1702,12 +1914,11 @@ function DesktopLayout({
             key={i.id}
             iconEl={i.iconEl}
             label={i.label}
-            onDoubleClick={i.action}
+            onActivate={i.action}
           />
         ))}
       </div>
 
-      {/* Desktop icons - bottom left */}
       <div
         style={{
           position: "absolute",
@@ -1724,66 +1935,161 @@ function DesktopLayout({
             key={i.id}
             iconEl={i.iconEl}
             label={i.label}
-            onDoubleClick={i.action}
+            onActivate={i.action}
           />
         ))}
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          top: MENUBAR_H + 16,
-          left: "50%",
-          transform: "translateX(-50%)",
-          fontFamily: "Geneva, sans-serif",
-          fontSize: 11,
-          color: "#bbb",
-          pointerEvents: "none",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Double-click icons · Drag windows
-      </div>
-
-      {windows.map((win) => (
-        <DraggableWindow
-          key={win.id}
-          win={win}
-          onClose={() => {
-            close(win.id);
-            if (win.type === "post") onClearPostRoute();
+      {!splitOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: MENUBAR_H + 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontFamily: "Geneva, sans-serif",
+            fontSize: 11,
+            color: "#bbb",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            zIndex: 1,
           }}
-          onFocus={() => focus(win.id)}
-          onMove={(x, y) => move(win.id, x, y)}
-          onResize={(w, h) => resize(win.id, w, h)}
         >
-          {win.type === "post" && <PostContent post={win.post} />}
-          {win.type === "archive" && (
-            <div style={{ height: "100%", overflow: "auto" }}>
-              <ArchiveContent onOpenPost={openPost} posts={posts} />
+          Click icons
+        </div>
+      )}
+
+      {splitOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: MENUBAR_H + 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "min(960px, calc(100% - 48px))",
+            height: `calc(100vh - ${MENUBAR_H + 40}px)`,
+            zIndex: 2,
+            background: "white",
+            border: "1.5px solid black",
+            boxShadow: "2px 2px 0 black",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <SplitPanelHeader title={splitTitle} onClose={closeSplit} />
+
+          <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+            <div
+              style={{
+                width: SIDEBAR_W,
+                flexShrink: 0,
+                borderRight: "1px solid black",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                background: "white",
+              }}
+            >
+              <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+                <ArchiveContent
+                  onOpenPost={openPost}
+                  posts={sidebarPosts}
+                  selectedId={selectedPostId}
+                  activeTags={splitMode === "trash" ? activeTrashTags : activeTags}
+                  onToggleTag={
+                    splitMode === "trash" ? onToggleTrashTag : onToggleTag
+                  }
+                  onClearTags={
+                    splitMode === "trash" ? onClearTrashTags : onClearTags
+                  }
+                  statusLabel={splitMode === "trash" ? "items in Trash" : "items"}
+                />
+              </div>
             </div>
-          )}
-          {win.type === "about" && <AboutContent />}
-          {win.type === "trash" && (
+
             <div
               style={{
                 flex: 1,
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 flexDirection: "column",
-                gap: 8,
-                fontFamily: "Geneva, sans-serif",
-                fontSize: 12,
-                color: "#999",
+                minWidth: 0,
+                minHeight: 0,
+                background: "white",
               }}
             >
-              <TrashIcon />
-              <span>The Trash is empty.</span>
+              <SplitPanelHeader
+                title={rightTitle}
+                onClose={showRightClose ? closeRightPanel : undefined}
+              />
+              <div
+                style={{
+                  flex: 1,
+                  overflow: "auto",
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {rightPanel === "post" && activePost && (
+                  <PostContent
+                    post={activePost}
+                    activeTags={
+                      isTrashPost(activePost) ? activeTrashTags : activeTags
+                    }
+                    onToggleTag={(tag) => {
+                      if (isTrashPost(activePost)) {
+                        onToggleTrashTag(tag);
+                        openTrash();
+                      } else {
+                        onToggleTag(tag);
+                        openArchive();
+                      }
+                    }}
+                  />
+                )}
+                {rightPanel === "empty" && (
+                  <div
+                    style={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 12,
+                      padding: 32,
+                      fontFamily: "Geneva, sans-serif",
+                      color: "#999",
+                    }}
+                  >
+                    {splitMode === "trash" ? (
+                      <>
+                        <TrashIcon size={40} />
+                        <div style={{ fontSize: 13, textAlign: "center" }}>
+                          Select an item from the Trash
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <PostFileIcon size={40} />
+                        <div style={{ fontSize: 13, textAlign: "center" }}>
+                          Select a post from the archive
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </DraggableWindow>
-      ))}
+          </div>
+        </div>
+      )}
+
+      {aboutOpen && (
+        <DesktopWindow title="About Me" onClose={() => setAboutOpen(false)}>
+          <AboutContent />
+        </DesktopWindow>
+      )}
     </div>
   );
 }
@@ -1799,6 +2105,22 @@ export default function MacClassicResponsive({ posts = [] }) {
     return getPostIdFromPath(window.location.pathname, posts);
   });
   const appFilter = darkMode ? "invert(1) hue-rotate(180deg)" : "none";
+
+  const [activeTags, setActiveTags] = useState([]);
+  const toggleTag = useCallback((tag) => {
+    setActiveTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }, []);
+  const clearTags = useCallback(() => setActiveTags([]), []);
+
+  const [activeTrashTags, setActiveTrashTags] = useState([]);
+  const toggleTrashTag = useCallback((tag) => {
+    setActiveTrashTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }, []);
+  const clearTrashTags = useCallback(() => setActiveTrashTags([]), []);
 
   const onOpenPostRoute = useCallback((postId) => {
     if (typeof window === "undefined") return;
@@ -1838,15 +2160,27 @@ export default function MacClassicResponsive({ posts = [] }) {
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
               posts={posts}
+              activeTags={activeTags}
+              onToggleTag={toggleTag}
+              onClearTags={clearTags}
+              activeTrashTags={activeTrashTags}
+              onToggleTrashTag={toggleTrashTag}
+              onClearTrashTags={clearTrashTags}
             />
           ) : (
-            <DesktopLayout
+            <WideLayout
               darkMode={darkMode}
               onToggleDarkMode={() => setDarkMode((v) => !v)}
               routedPostId={routedPostId}
               onOpenPostRoute={onOpenPostRoute}
               onClearPostRoute={onClearPostRoute}
               posts={posts}
+              activeTags={activeTags}
+              onToggleTag={toggleTag}
+              onClearTags={clearTags}
+              activeTrashTags={activeTrashTags}
+              onToggleTrashTag={toggleTrashTag}
+              onClearTrashTags={clearTrashTags}
             />
           )}
         </div>
