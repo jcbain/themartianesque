@@ -179,8 +179,16 @@ function TrashIcon({ size = 32 }) {
 
 function PostFileIcon({ size = 26, invert = false }) {
   const stroke = invert ? "white" : "black";
+  const width = size * 0.867;
   return (
-    <svg width={size * 0.867} height={size} viewBox="0 0 26 30" fill="none">
+    <svg
+      width={width}
+      height={size}
+      viewBox="0 0 26 30"
+      fill="none"
+      style={{ flexShrink: 0, display: "block", width, height: size }}
+      aria-hidden
+    >
       <rect
         x="2"
         y="1"
@@ -862,7 +870,18 @@ function ArchiveContent({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <PostFileIcon size={22} invert={selected === post.id} />
+            <div
+              style={{
+                flexShrink: 0,
+                width: 22 * 0.867,
+                height: 22,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <PostFileIcon size={22} invert={selected === post.id} />
+            </div>
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
