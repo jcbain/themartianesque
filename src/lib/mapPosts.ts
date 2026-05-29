@@ -13,5 +13,7 @@ export function mapPostEntry(entry: CollectionEntry<"posts">) {
     wordCount: entry.body.trim().split(/\s+/).length,
     content: entry.body.trim(),
     tags: entry.data.tags,
+    kind: entry.data.kind,
+    draft: entry.data.draft,
   };
 }

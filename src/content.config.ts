@@ -8,6 +8,8 @@ const posts = defineCollection({
     title: z.string(),
     pubDate: z.coerce.date(),
     tags: z.array(z.string()).default([]),
+    kind: z.enum(["blog", "trash"]).default("blog"),
+    draft: z.boolean().default(false),
   }),
 });
 

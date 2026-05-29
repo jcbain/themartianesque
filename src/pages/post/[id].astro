@@ -1,20 +1,14 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseHead from '../../components/ui/BaseHead.astro';
 import MacClassicResponsive from '../../components/react/MacClassicResponsive.jsx';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
-import { mapPostEntry } from '../../lib/mapPosts';
+import { getAppPostStaticPaths, getAppPosts } from '../../lib/posts';
 
 export function getStaticPaths() {
-	return getCollection('posts').then((entries) =>
-		entries.map((entry) => ({
-			params: { id: String(entry.data.id) },
-		})),
-	);
+	return getAppPostStaticPaths();
 }
 
-const postsCollection = (await getCollection('posts')).sort((a, b) => b.data.id - a.data.id);
-const posts = postsCollection.map(mapPostEntry);
+const posts = await getAppPosts();
 ---
 
 <!doctype html>

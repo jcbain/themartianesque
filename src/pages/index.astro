@@ -1,12 +1,10 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseHead from '../components/ui/BaseHead.astro';
 import MacClassicResponsive from '../components/react/MacClassicResponsive.jsx';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { mapPostEntry } from '../lib/mapPosts';
+import { getAppPosts } from '../lib/posts';
 
-const postsCollection = (await getCollection('posts')).sort((a, b) => b.data.id - a.data.id);
-const posts = postsCollection.map(mapPostEntry);
+const posts = await getAppPosts();
 ---
 
 <!doctype html>

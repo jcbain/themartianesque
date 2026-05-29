@@ -10,6 +10,18 @@ function getPostIdFromPath(pathname, posts) {
   return posts.some((post) => post.id === id) ? id : null;
 }
 
+function getBlogPosts(posts) {
+  return posts.filter((post) => (post.kind ?? "blog") === "blog");
+}
+
+function getTrashPosts(posts) {
+  return posts.filter((post) => post.kind === "trash");
+}
+
+function isTrashPost(post) {
+  return post?.kind === "trash";
+}
+
 function useIsMobile() {
   const [mobile, setMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth < 768
@@ -626,9 +638,27 @@ function PostContent({ post, activeTags = [], onToggleTag }) {
             fontWeight: "bold",
             fontFamily: "Chicago, Geneva, sans-serif",
             lineHeight: 1.3,
+            display: "flex",
+            alignItems: "baseline",
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
           {post.title}
+          {post.draft && (
+            <span
+              style={{
+                fontSize: 10,
+                fontFamily: "Chicago, Geneva, sans-serif",
+                fontWeight: "bold",
+                border: "1px dashed #999",
+                padding: "1px 6px",
+                color: "#666",
+              }}
+            >
+              DRAFT
+            </span>
+          )}
         </div>
         <div
           style={{
@@ -641,6 +671,20 @@ function PostContent({ post, activeTags = [], onToggleTag }) {
           {post.date}
         </div>
       </div>
+      {post.draft && (
+        <div
+          style={{
+            fontSize: 10,
+            fontFamily: "Geneva, sans-serif",
+            color: "#666",
+            border: "1px dashed #999",
+            padding: "5px 8px",
+            marginBottom: 14,
+          }}
+        >
+          Draft — visible in dev only; excluded from production builds.
+        </div>
+      )}
       {post.content.split("\n\n").map((p, i) => (
         <p
           key={i}
@@ -705,6 +749,7 @@ function ArchiveContent({
   onToggleTag,
   onClearTags,
   compact = false,
+  statusLabel = "items",
 }) {
   const [internalSelected, setInternalSelected] = useState(null);
   const selected = selectedIdProp ?? internalSelected;
@@ -826,9 +871,35 @@ function ArchiveContent({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
-                {post.title}
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {post.title}
+                </span>
+                {post.draft && (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontSize: 9,
+                      fontFamily: "Chicago, Geneva, sans-serif",
+                      fontWeight: "bold",
+                      border: `1px dashed ${selected === post.id ? "#ccc" : "#999"}`,
+                      padding: "0 3px",
+                      color: selected === post.id ? "#ddd" : "#888",
+                    }}
+                  >
+                    DRAFT
+                  </span>
+                )}
               </div>
               <div
                 style={{
@@ -877,7 +948,7 @@ function ArchiveContent({
           borderTop: "1px solid #eee",
         }}
       >
-        {visiblePosts.length} of {posts.length} items
+        {visiblePosts.length} of {posts.length} {statusLabel}
         {activeTags.length > 0 ? ` · ${activeTags.join(", ")}` : ""}
       </div>
     </div>
@@ -1358,7 +1429,12 @@ function MobileLayout({
   activeTags,
   onToggleTag,
   onClearTags,
+  activeTrashTags,
+  onToggleTrashTag,
+  onClearTrashTags,
 }) {
+  const blogPosts = getBlogPosts(posts);
+  const trashPosts = getTrashPosts(posts);
   const [sheet, setSheet] = useState(null); // { type, post? }
   const [postSheet, setPostSheet] = useState(null);
 
@@ -1402,7 +1478,7 @@ function MobileLayout({
       id: "trash",
       label: "Trash",
       iconEl: <TrashIcon size={30} />,
-      action: () => {},
+      action: () => setSheet({ type: "trash" }),
     },
   ];
 
@@ -1469,7 +1545,7 @@ function MobileLayout({
         >
           Recent Posts
         </div>
-        {posts.slice(0, 3).map((post) => (
+        {blogPosts.slice(0, 3).map((post) => (
           <div
             key={post.id}
             onClick={() => openPost(post)}
@@ -1518,11 +1594,28 @@ function MobileLayout({
       >
         <ArchiveContent
           onOpenPost={openPost}
-          posts={posts}
+          posts={blogPosts}
           activeTags={activeTags}
           onToggleTag={onToggleTag}
           onClearTags={onClearTags}
           compact
+        />
+      </SheetWindow>
+
+      {/* Trash sheet */}
+      <SheetWindow
+        title="Trash"
+        visible={sheet?.type === "trash"}
+        onClose={() => setSheet(null)}
+      >
+        <ArchiveContent
+          onOpenPost={openPost}
+          posts={trashPosts}
+          activeTags={activeTrashTags}
+          onToggleTag={onToggleTrashTag}
+          onClearTags={onClearTrashTags}
+          compact
+          statusLabel="items in Trash"
         />
       </SheetWindow>
 
@@ -1547,10 +1640,17 @@ function MobileLayout({
         {postSheet && (
           <PostContent
             post={postSheet}
-            activeTags={activeTags}
+            activeTags={
+              isTrashPost(postSheet) ? activeTrashTags : activeTags
+            }
             onToggleTag={(tag) => {
-              onToggleTag(tag);
-              setSheet({ type: "archive" });
+              if (isTrashPost(postSheet)) {
+                onToggleTrashTag(tag);
+                setSheet({ type: "trash" });
+              } else {
+                onToggleTag(tag);
+                setSheet({ type: "archive" });
+              }
             }}
           />
         )}
@@ -1579,35 +1679,61 @@ function WideLayout({
   activeTags,
   onToggleTag,
   onClearTags,
+  activeTrashTags,
+  onToggleTrashTag,
+  onClearTrashTags,
 }) {
+  const blogPosts = getBlogPosts(posts);
+  const trashPosts = getTrashPosts(posts);
   const didDefaultOpen = useRef(false);
   const [activeMenu, setActiveMenu] = useState(null);
   const isBlogHome =
     typeof window !== "undefined" &&
     /^\/\/?$/.test(window.location.pathname);
-  const shouldDefaultOpen = isBlogHome && posts.length > 0;
-  const [splitOpen, setSplitOpen] = useState(
-    () => !!routedPostId || shouldDefaultOpen
+  const shouldDefaultOpen = isBlogHome && blogPosts.length > 0;
+
+  const resolveSplitMode = useCallback(
+    (postId) => {
+      if (!postId) return "blog";
+      const post = posts.find((entry) => entry.id === postId);
+      return isTrashPost(post) ? "trash" : "blog";
+    },
+    [posts]
   );
+
+  const [splitMode, setSplitMode] = useState(() => {
+    if (routedPostId) return resolveSplitMode(routedPostId);
+    if (shouldDefaultOpen) return "blog";
+    return null;
+  });
   const [aboutOpen, setAboutOpen] = useState(false);
   const [rightPanel, setRightPanel] = useState(() =>
     routedPostId || shouldDefaultOpen ? "post" : "empty"
   );
 
+  const splitOpen = splitMode != null;
+  const sidebarPosts = splitMode === "trash" ? trashPosts : blogPosts;
+
   const activePost =
     routedPostId != null
       ? posts.find((post) => post.id === routedPostId) ?? null
-      : rightPanel === "post" && splitOpen && posts.length > 0
-        ? posts[0]
+      : rightPanel === "post" && splitOpen
+        ? splitMode === "trash"
+          ? trashPosts[0] ?? null
+          : blogPosts[0] ?? null
         : null;
 
   const selectedPostId =
     routedPostId ??
-    (rightPanel === "post" && splitOpen ? posts[0]?.id ?? null : null);
+    (rightPanel === "post" && splitOpen
+      ? splitMode === "trash"
+        ? trashPosts[0]?.id ?? null
+        : blogPosts[0]?.id ?? null
+      : null);
 
   const openPost = useCallback(
     (post) => {
-      setSplitOpen(true);
+      setSplitMode(isTrashPost(post) ? "trash" : "blog");
       setRightPanel("post");
       onOpenPostRoute(post.id);
     },
@@ -1615,22 +1741,32 @@ function WideLayout({
   );
 
   const openArchive = useCallback(() => {
-    setSplitOpen(true);
-    setRightPanel(routedPostId ? "post" : "empty");
-  }, [routedPostId]);
+    setSplitMode("blog");
+    setRightPanel(
+      routedPostId && !isTrashPost(posts.find((post) => post.id === routedPostId))
+        ? "post"
+        : "empty"
+    );
+  }, [routedPostId, posts]);
 
   const openAbout = useCallback(() => {
     setAboutOpen(true);
   }, []);
 
   const openTrash = useCallback(() => {
-    setSplitOpen(true);
-    setRightPanel("trash");
-    onClearPostRoute();
-  }, [onClearPostRoute]);
+    setSplitMode("trash");
+    setRightPanel(
+      routedPostId && isTrashPost(posts.find((post) => post.id === routedPostId))
+        ? "post"
+        : "empty"
+    );
+    if (!routedPostId || !isTrashPost(posts.find((post) => post.id === routedPostId))) {
+      onClearPostRoute();
+    }
+  }, [onClearPostRoute, posts, routedPostId]);
 
   const closeSplit = useCallback(() => {
-    setSplitOpen(false);
+    setSplitMode(null);
     setRightPanel("empty");
     onClearPostRoute();
   }, [onClearPostRoute]);
@@ -1670,6 +1806,7 @@ function WideLayout({
       label: "File",
       items: [
         { label: "Open Archive…", action: openArchive },
+        { label: "Open Trash…", action: openTrash },
         "---",
         { label: "About Me…", action: openAbout },
       ],
@@ -1677,12 +1814,12 @@ function WideLayout({
     {
       label: "View",
       items: [
-        ...getAllTags(posts).map((tag) => ({
+        ...getAllTags(blogPosts).map((tag) => ({
           label: activeTags.includes(tag) ? `✓ ${tag}` : tag,
           action: () => onToggleTag(tag),
         })),
-        ...(getAllTags(posts).length > 0 ? ["---"] : []),
-        ...(getAllTags(posts).length > 0
+        ...(getAllTags(blogPosts).length > 0 ? ["---"] : []),
+        ...(getAllTags(blogPosts).length > 0
           ? [{ label: "Show All Labels", action: onClearTags }]
           : []),
       ],
@@ -1725,32 +1862,27 @@ function WideLayout({
       didDefaultOpen.current = true;
       return;
     }
-    if (posts.length === 0) return;
+    if (blogPosts.length === 0) return;
     if (!/^\/\/?$/.test(window.location.pathname)) return;
 
     didDefaultOpen.current = true;
-    onOpenPostRoute(posts[0].id);
-  }, [routedPostId, posts, onOpenPostRoute]);
+    onOpenPostRoute(blogPosts[0].id);
+  }, [routedPostId, blogPosts, onOpenPostRoute]);
 
   useEffect(() => {
     if (routedPostId) {
-      setSplitOpen(true);
+      setSplitMode(resolveSplitMode(routedPostId));
       setRightPanel("post");
     } else {
       setRightPanel((panel) => (panel === "post" ? "empty" : panel));
     }
-  }, [routedPostId]);
+  }, [routedPostId, resolveSplitMode]);
 
-  const splitTitle = rightPanel === "trash" ? "Trash" : "Post Archive";
+  const splitTitle = splitMode === "trash" ? "Trash" : "Post Archive";
 
-  const rightTitle =
-    rightPanel === "trash"
-      ? "Trash"
-      : activePost
-        ? activePost.title
-        : "Post";
+  const rightTitle = activePost ? activePost.title : splitMode === "trash" ? "Trash" : "Post";
 
-  const showRightClose = rightPanel === "post" || rightPanel === "trash";
+  const showRightClose = rightPanel === "post";
 
   return (
     <div
@@ -1874,11 +2006,16 @@ function WideLayout({
               <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
                 <ArchiveContent
                   onOpenPost={openPost}
-                  posts={posts}
+                  posts={sidebarPosts}
                   selectedId={selectedPostId}
-                  activeTags={activeTags}
-                  onToggleTag={onToggleTag}
-                  onClearTags={onClearTags}
+                  activeTags={splitMode === "trash" ? activeTrashTags : activeTags}
+                  onToggleTag={
+                    splitMode === "trash" ? onToggleTrashTag : onToggleTag
+                  }
+                  onClearTags={
+                    splitMode === "trash" ? onClearTrashTags : onClearTags
+                  }
+                  statusLabel={splitMode === "trash" ? "items in Trash" : "items"}
                 />
               </div>
             </div>
@@ -1909,30 +2046,19 @@ function WideLayout({
                 {rightPanel === "post" && activePost && (
                   <PostContent
                     post={activePost}
-                    activeTags={activeTags}
+                    activeTags={
+                      isTrashPost(activePost) ? activeTrashTags : activeTags
+                    }
                     onToggleTag={(tag) => {
-                      onToggleTag(tag);
-                      openArchive();
+                      if (isTrashPost(activePost)) {
+                        onToggleTrashTag(tag);
+                        openTrash();
+                      } else {
+                        onToggleTag(tag);
+                        openArchive();
+                      }
                     }}
                   />
-                )}
-                {rightPanel === "trash" && (
-                  <div
-                    style={{
-                      flex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexDirection: "column",
-                      gap: 8,
-                      fontFamily: "Geneva, sans-serif",
-                      fontSize: 12,
-                      color: "#999",
-                    }}
-                  >
-                    <TrashIcon />
-                    <span>The Trash is empty.</span>
-                  </div>
                 )}
                 {rightPanel === "empty" && (
                   <div
@@ -1948,10 +2074,21 @@ function WideLayout({
                       color: "#999",
                     }}
                   >
-                    <PostFileIcon size={40} />
-                    <div style={{ fontSize: 13, textAlign: "center" }}>
-                      Select a post from the archive
-                    </div>
+                    {splitMode === "trash" ? (
+                      <>
+                        <TrashIcon size={40} />
+                        <div style={{ fontSize: 13, textAlign: "center" }}>
+                          Select an item from the Trash
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <PostFileIcon size={40} />
+                        <div style={{ fontSize: 13, textAlign: "center" }}>
+                          Select a post from the archive
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -1988,6 +2125,14 @@ export default function MacClassicResponsive({ posts = [] }) {
     );
   }, []);
   const clearTags = useCallback(() => setActiveTags([]), []);
+
+  const [activeTrashTags, setActiveTrashTags] = useState([]);
+  const toggleTrashTag = useCallback((tag) => {
+    setActiveTrashTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }, []);
+  const clearTrashTags = useCallback(() => setActiveTrashTags([]), []);
 
   const onOpenPostRoute = useCallback((postId) => {
     if (typeof window === "undefined") return;
@@ -2030,6 +2175,9 @@ export default function MacClassicResponsive({ posts = [] }) {
               activeTags={activeTags}
               onToggleTag={toggleTag}
               onClearTags={clearTags}
+              activeTrashTags={activeTrashTags}
+              onToggleTrashTag={toggleTrashTag}
+              onClearTrashTags={clearTrashTags}
             />
           ) : (
             <WideLayout
@@ -2042,6 +2190,9 @@ export default function MacClassicResponsive({ posts = [] }) {
               activeTags={activeTags}
               onToggleTag={toggleTag}
               onClearTags={clearTags}
+              activeTrashTags={activeTrashTags}
+              onToggleTrashTag={toggleTrashTag}
+              onClearTrashTags={clearTrashTags}
             />
           )}
         </div>
