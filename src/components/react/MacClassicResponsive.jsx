@@ -1393,17 +1393,30 @@ function WideLayout({
   onClearPostRoute,
   posts,
 }) {
+  const didDefaultOpen = useRef(false);
   const [activeMenu, setActiveMenu] = useState(null);
-  const [splitOpen, setSplitOpen] = useState(() => !!routedPostId);
+  const isBlogHome =
+    typeof window !== "undefined" &&
+    /^\/\/?$/.test(window.location.pathname);
+  const shouldDefaultOpen = isBlogHome && posts.length > 0;
+  const [splitOpen, setSplitOpen] = useState(
+    () => !!routedPostId || shouldDefaultOpen
+  );
   const [aboutOpen, setAboutOpen] = useState(false);
   const [rightPanel, setRightPanel] = useState(() =>
-    routedPostId ? "post" : "empty"
+    routedPostId || shouldDefaultOpen ? "post" : "empty"
   );
 
   const activePost =
     routedPostId != null
       ? posts.find((post) => post.id === routedPostId) ?? null
-      : null;
+      : rightPanel === "post" && splitOpen && posts.length > 0
+        ? posts[0]
+        : null;
+
+  const selectedPostId =
+    routedPostId ??
+    (rightPanel === "post" && splitOpen ? posts[0]?.id ?? null : null);
 
   const openPost = useCallback(
     (post) => {
@@ -1504,6 +1517,20 @@ function WideLayout({
     window.addEventListener("click", h);
     return () => window.removeEventListener("click", h);
   }, []);
+
+  useEffect(() => {
+    if (didDefaultOpen.current) return;
+    if (typeof window === "undefined") return;
+    if (routedPostId) {
+      didDefaultOpen.current = true;
+      return;
+    }
+    if (posts.length === 0) return;
+    if (!/^\/\/?$/.test(window.location.pathname)) return;
+
+    didDefaultOpen.current = true;
+    onOpenPostRoute(posts[0].id);
+  }, [routedPostId, posts, onOpenPostRoute]);
 
   useEffect(() => {
     if (routedPostId) {
@@ -1648,7 +1675,7 @@ function WideLayout({
                 <ArchiveContent
                   onOpenPost={openPost}
                   posts={posts}
-                  selectedId={routedPostId}
+                  selectedId={selectedPostId}
                 />
               </div>
             </div>
